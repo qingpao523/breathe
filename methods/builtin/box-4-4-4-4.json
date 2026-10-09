@@ -1,0 +1,39 @@
+{
+  "id": "box-4-4-4-4",
+  "name": "盒式呼吸 4-4-4-4",
+  "phases": [
+    {
+      "k": "inhale",
+      "s": 4
+    },
+    {
+      "k": "hold",
+      "s": 4
+    },
+    {
+      "k": "exhale",
+      "s": 4
+    },
+    {
+      "k": "hold2",
+      "s": 4
+    }
+  ],
+  "cycles": 6,
+  "mode": "timed",
+  "geometry": "square",
+  "meta": {
+    "scene": [
+      "减压",
+      "专注",
+      "运动"
+    ],
+    "source": "内置",
+    "safety": "low",
+    "evidence": {
+      "level": "★★",
+      "note": "表现型证据；生理反应混合",
+      "ref": "Dujawara et al., Appl Psychophysiol Biofeedback 2026, 8 RCT review"
+    }
+  }
+}

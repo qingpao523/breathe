@@ -1,0 +1,30 @@
+{
+  "id": "coherent-5-5",
+  "name": "共振慢呼吸 5.5",
+  "phases": [
+    {
+      "k": "inhale",
+      "s": 5.5
+    },
+    {
+      "k": "exhale",
+      "s": 5.5
+    }
+  ],
+  "cycles": 10,
+  "mode": "timed",
+  "geometry": "wave",
+  "meta": {
+    "scene": [
+      "睡眠",
+      "恢复"
+    ],
+    "source": "内置",
+    "safety": "none",
+    "evidence": {
+      "level": "★★★",
+      "note": "迷走激活与 HRV，证据最强的恢复手段",
+      "ref": "多项 RCT / 元分析 (6 次/分)"
+    }
+  }
+}

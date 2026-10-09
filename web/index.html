@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>运动模块 · 引导器模板</title>
+<style>
+
+* {box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+body{margin:0;min-height:100vh;color:#e8eef8;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+background:radial-gradient(900px 500px at 15% -10%,#153a4d,transparent 55%),radial-gradient(800px 460px at 88% 4%,#3a1f52,transparent 52%),linear-gradient(170deg,#070c14,#0c1420 50%,#0a0f18)}
+:root{--acc:#5ee0ff;--acc2:#b18cff;--card:rgba(255,255,255,.055);--st:rgba(255,255,255,.12);--dim:#93a4bd}
+.screen{display:none;padding:22px 18px 40px;max-width:520px;margin:0 auto}
+.screen.on{display:block}
+.brand{display:flex;align-items:center;gap:9px;font-size:19px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
+.brand em{font-style:normal;font-size:11.5px;color:var(--dim)}
+.hint{color:var(--dim);font-size:13px;margin:10px 0 16px}
+.card{margin:11px 0;padding:15px 16px;border-radius:16px;background:var(--card);border:1px solid var(--st);cursor:pointer;transition:.18s}
+.card:active{transform:scale(.985)}
+.card.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.card h3{margin:0 0 5px;font-size:16.5px}
+.card p{margin:0;font-size:12.5px;color:var(--dim)}
+.row{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+.tag{font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--st);color:#cfe0f5}
+.tag.p{border-color:rgba(94,224,255,.5);color:var(--acc)}
+.tag.e{border-color:rgba(177,140,255,.5);color:var(--acc2)}
+.panel{margin-top:18px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--st)}
+.panel-h{font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap}
+pre.cfg{margin:0;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#bcd6ef;white-space:pre-wrap;line-height:1.6}
+.safe{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.7}
+.g-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.g-title{text-align:center;font-size:14px}
+.g-title em{display:block;font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px}
+.ghost{background:rgba(255,255,255,.06);border:1px solid var(--st);color:#cfe0f5;font-size:12px;padding:7px 12px;border-radius:11px}
+.stage{position:relative;margin:14px auto 0;width:min(88vw,420px);aspect-ratio:1}
+canvas{width:100%;height:100%;display:block}
+.hud{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.phase{font-size:15px;color:#d9e8ff;letter-spacing:2px}
+.count{font-size:52px;font-weight:250;line-height:1.1;font-variant-numeric:tabular-nums}
+.sub{font-size:12px;color:var(--dim);margin-top:4px}
+.prep{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,10,18,.72);border-radius:50%}
+.prep.on{display:flex}
+.prep span{font-size:64px;font-weight:250;color:var(--acc)}
+.ctl{margin-top:18px;display:flex;flex-direction:column;gap:11px}
+.ctl .row{justify-content:center;margin:0}
+.seg{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--st);border-radius:12px;overflow:hidden}
+.seg button{flex:1;background:none;border:0;color:var(--dim);font-size:12px;padding:9px 12px}
+.seg button.on{background:rgba(94,224,255,.16);color:#eaf6ff}
+.main{width:100%;padding:15px;border-radius:14px;border:0;font-size:15.5px;font-weight:600;background:linear-gradient(100deg,var(--acc),var(--acc2));color:#06131b}
+.minor{width:100%;padding:15px;border-radius:14px;border:1px solid var(--st);font-size:15px;background:rgba(255,255,255,.06);color:#dceaff}
+.finish{margin-top:26px;text-align:center}
+.finish h2{font-size:26px;font-weight:300;margin:0 0 6px}
+.kpi{display:flex;gap:10px;margin-top:18px}
+.kpi div{flex:1;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--st)}
+.kpi b{display:block;font-size:23px;font-weight:400}
+.kpi em{font-style:normal;font-size:11.5px;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<section id="s-list" class="screen on">
+  <div class="brand"><span class="dot"></span><b>运动</b><em>运动模块 · 引导器模板</em></div>
+  <div class="hint">选一节课直接开始 —— 这一屏就是产品的样板</div>
+  <div id="cards"></div>
+  <div class="panel">
+    <div class="panel-h">引擎配置（数据驱动）<span class="tag p">新增技法 = 加一行配置</span></div>
+    <pre class="cfg" id="cfgOut"></pre>
+  </div>
+  <div class="safe">安全提示：含屏息课程需先做屏息筛查<br>非医疗建议</div>
+</section>
+
+<section id="s-guide" class="screen">
+  <div class="g-top">
+    <button class="ghost" id="btnBack">返回</button>
+    <div class="g-title"><b id="gName"></b><em id="gCycle"></em></div>
+    <button class="ghost" id="btnStop">结束</button>
+  </div>
+  <div class="stage">
+    <canvas id="cv" width="720" height="720"></canvas>
+    <div class="hud">
+      <div class="phase" id="phaseTx">—</div>
+      <div class="count" id="countTx">0</div>
+      <div class="sub" id="subTx"></div>
+    </div>
+    <div class="prep" id="prep"><span id="prepTx">3</span></div>
+  </div>
+  <div class="ctl">
+    <div class="row">
+      <div class="seg" id="segVis">
+        <button data-v="1" class="on">视觉</button><button data-v="0">静音视觉</button>
+      </div>
+      <div class="seg" id="segHap">
+        <button data-v="1" class="on">触觉</button><button data-v="0">关</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="seg" id="segSpd">
+        <button data-v="1" class="on">标准</button><button data-v="1.35">慢</button><button data-v="1.7">更慢</button>
+      </div>
+    </div>
+    <button class="main" id="btnMain">开始</button>
+  </div>
+</section>
+
+<section id="s-done" class="screen">
+  <div class="finish"><h2>又赢了一次</h2><div class="sub" id="doneName"></div></div>
+  <div class="kpi">
+    <div><b id="kMin">0</b><em>时长（分钟）</em></div>
+    <div><b id="kCyc">0</b><em>循环数</em></div>
+    <div><b id="kPh">0</b><em>相位切换</em></div>
+  </div>
+  <div class="ctl" style="margin-top:22px">
+    <button class="main" id="btnShare">分享卡片</button>
+    <button class="minor" id="btnRemind">订提醒</button>
+  </div>
+  <div class="safe">安全提示：含屏息课程需先做屏息筛查<br>非医疗建议</div>
+</section>
+
+<script>
+/* ============================================================
+   运动模块 · 引导器模板
+   §1 课程配置（数据层：新增技法 = 加一行）
+   §2 相位时间轴引擎（所有技法共用）
+   §3 canvas 渲染器（方形轨道 / 圆环两种几何）
+   §4 状态机与交互
+   ============================================================ */
+
+/* ---------- §1 课程配置 ---------- */
+const PHASE_TX = { inhale:"吸", hold:"屏", exhale:"呼", hold2:"持" };
+
+const COURSES = [
+  { id:"c1", name:"骑前唤醒", tech:"鳄鱼式 + 方盒 4-4-4-4", meta:"3-5 分钟 · 出门前",
+    proto:"G+A", evid:"膈肌激活 · 警察模拟研究表现提升",
+    shape:"square", cycles:4,
+    phases:[{k:"inhale",s:4},{k:"hold",s:4},{k:"exhale",s:4},{k:"hold2",s:4}] },
+
+  { id:"c2", name:"骑行节奏呼吸", tech:"吸 3 圈踏频 / 呼 2 圈踏频", meta:"行进中 · 90 rpm",
+    proto:"F", evid:"声引导使呼吸-步频耦合率 26.3% → 69.9%",
+    shape:"ring", cycles:16, bpm:90,
+    phases:[{k:"inhale",beats:3},{k:"exhale",beats:2}] },
+
+  { id:"c3", name:"骑后恢复", tech:"4-4-6 简化版", meta:"5 分钟 · 到家拉伸时",
+    proto:"A", evid:"MSSE 2026：副交感再激活显著加快（HF-HRV p=0.001）",
+    shape:"ring", cycles:8,
+    phases:[{k:"inhale",s:4},{k:"exhale",s:6}] },
+
+  { id:"c4", name:"关键时刻", tech:"方盒 4-4-4-4", meta:"2 分钟 · 出发前",
+    proto:"A", evid:"箱式呼吸独有注意力抑制错误减少的红利",
+    shape:"square", cycles:4,
+    phases:[{k:"inhale",s:4},{k:"hold",s:4},{k:"exhale",s:4},{k:"hold2",s:4}] }
+];
+
+/* F 原型：把「圈数」按踏频换算成秒 —— 同一个状态机，只换时间基准 */
+function timeline(c){
+  return c.phases.map(p => ({
+    k: p.k,
+    sec: (p.beats != null) ? p.beats * (60 / c.bpm) : p.s
+  }));
+}
+
+/* ---------- §2 引擎状态 ---------- */
+const E = {
+
+  course:null, tl:[ ], idx:0, t:0, cycle:1,
+
+  mode:"list",          // list | prepare | run | paused | done
+  speed:1, sound:true, hap:true,
+  prep:3, elapsed:0, switches:0, last:-1
+};
+
+/* ---------- §3 渲染器 ---------- */
+const cv = document.getElementById("cv"), g = cv.getContext("2d");
+const W = 720, C = W/2;
+
+function levelOf(p){                       // 0..1 呼吸充盈度
+  if(p.k==="inhale")  return p.p;
+  if(p.k==="hold")    return 1;
+  if(p.k==="exhale")  return 1 - p.p;
+  return 0;                                // hold2
+}
+
+function drawTrack(shape, prog){
+  g.clearRect(0,0,W,W);
+  g.lineCap = "round";
+
+  /* 外圈光晕 */
+  const glow = g.createRadialGradient(C,C,40,C,C,330);
+  glow.addColorStop(0,"rgba(94,224,255,.16)");
+  glow.addColorStop(1,"rgba(94,224,255,0)");
+  g.fillStyle = glow; g.fillRect(0,0,W,W);
+
+  if(shape==="square"){
+    const s = 240, r = 54, x0 = C-s, y0 = C-s, x1 = C+s, y1 = C+s;
+    g.beginPath();
+    g.moveTo(x0+r,y0); g.lineTo(x1-r,y0); g.quadraticCurveTo(x1,y0,x1,y0+r);
+    g.lineTo(x1,y1-r); g.quadraticCurveTo(x1,y1,x1-r,y1);
+    g.lineTo(x0+r,y1); g.quadraticCurveTo(x0,y1,x0,y1-r);
+    g.lineTo(x0,y0+r); g.quadraticCurveTo(x0,y0,x0+r,y0); g.closePath();
+    g.strokeStyle = "rgba(255,255,255,.16)"; g.lineWidth = 3; g.stroke();
+
+    /* 轨迹进度：沿周长推进 */
+    g.save(); g.setLineDash([4,10]); g.strokeStyle = "rgba(94,224,255,.45)";
+    g.lineWidth = 2; g.stroke(); g.restore();
+  } else {
+    g.beginPath(); g.arc(C,C,250,0,Math.PI*2);
+    g.strokeStyle = "rgba(255,255,255,.16)"; g.lineWidth = 3; g.stroke();
+
+    /* 进度弧 */
+    g.beginPath();
+    g.arc(C,C,250,-Math.PI/2,-Math.PI/2 + Math.PI*2*prog);
+    g.strokeStyle = "rgba(94,224,255,.75)"; g.lineWidth = 4; g.stroke();
+  }
+}
+
+function drawBall(shape, prog, lvl, isHold){
+  if(shape==="square"){
+    /* 光点沿方形周长移动：四个相位 = 四条边 */
+    const s = 240, x0 = C-s, y0 = C-s, x1 = C+s, y1 = C+s;
+    const per = [ [x0,y0,x1,y0], [x1,y0,x1,y1], [x1,y1,x0,y1], [x0,y1,x0,y0] ];
+    const n = per.length, f = (E.idx + prog)/n, seg = Math.min(n-1, Math.floor(f*n)), t = f*n - seg;
+    const [ax,ay,bx,by] = per[seg];
+    const px = ax + (bx-ax)*t, py = ay + (by-ay)*t;
+    g.beginPath(); g.arc(px,py,13,0,Math.PI*2);
+    g.fillStyle = "#5ee0ff"; g.shadowColor="#5ee0ff"; g.shadowBlur=22; g.fill(); g.shadowBlur=0;
+  }
+  /* 中心呼吸球 */
+  const R = 44 + 62*lvl;
+  const ball = g.createRadialGradient(C-14,C-18,8,C,C,R);
+  ball.addColorStop(0,"rgba(255,255,255,.9)");
+  ball.addColorStop(.45,"rgba(177,140,255,.72)");
+  ball.addColorStop(1,"rgba(94,224,255,.30)");
+  g.beginPath(); g.arc(C,C,R,0,Math.PI*2); g.fillStyle = ball; g.fill();
+
+  if(isHold){                                  /* 停留相位：脉冲环，强化「停在这」 */
+    const pulse = 1 + .06*Math.sin(Date.now()/220);
+    g.beginPath(); g.arc(C,C,(R+26)*pulse,0,Math.PI*2);
+    g.strokeStyle = "rgba(255,158,203,.55)"; g.lineWidth = 3; g.stroke();
+  }
+}
+
+/* ---------- §4 交互 ---------- */
+const $ = id => document.getElementById(id);
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $(id).classList.add("on"); }
+
+let cur = COURSES[0];
+function renderCards(){
+  $("cards").innerHTML = COURSES.map((c,i)=>`
+    <div class="card${i===0?" sel":""}" data-i="${i}">
+      <h3>${c.name}</h3>
+      <p>${c.tech}</p>
+      <div class="row">
+        <span class="tag">${c.meta}</span>
+        <span class="tag p">原型 ${c.proto}</span>
+        <span class="tag e">证据</span>
+      </div>
+      <p style="margin-top:7px;color:#9fb3cc">${c.evid}</p>
+    </div>`).join("");
+  document.querySelectorAll(".card").forEach(el=>{
+    el.onclick = ()=>{
+      document.querySelectorAll(".card").forEach(e=>e.classList.remove("sel"));
+      el.classList.add("sel"); cur = COURSES[+el.dataset.i]; renderCfg();
+    };
+  });
+  renderCfg();
+}
+function renderCfg(){
+  $("cfgOut").textContent = JSON.stringify(
+    { id:cur.id, name:cur.name, shape:cur.shape, cycles:cur.cycles,
+      bpm:cur.bpm||null, phases:cur.phases }, null, 2);
+}
+
+function beep(f){
+  if(!E.sound) return;
+  try{
+    const AC = window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    E.ac = E.ac || new AC();
+    const o = E.ac.createOscillator(), gn = E.ac.createGain();
+    o.frequency.value = f; o.connect(gn); gn.connect(E.ac.destination);
+    gn.gain.setValueAtTime(.06, E.ac.currentTime);
+    gn.gain.exponentialRampToValueAtTime(.0001, E.ac.currentTime+.14);
+    o.start(); o.stop(E.ac.currentTime+.15);
+  }catch(e){}
+}
+function buzz(){
+  if(E.hap && navigator.vibrate) navigator.vibrate(18);
+}
+
+function start(c){
+  E.course = c; E.tl = timeline(c); E.idx = 0; E.t = 0; E.cycle = 1;
+  E.elapsed = 0; E.switches = 0; E.mode = "prepare"; E.prep = 3;
+  $("gName").textContent = c.name;
+  $("subTx").textContent = c.tech;
+  $("prep").classList.add("on"); $("prepTx").textContent = "3";
+  $("btnMain").textContent = "暂停";
+  show("s-guide");
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(.05,(now-last)/1000); last = now;
+  if(E.mode==="prepare"){
+    E.prep -= dt;
+    if(E.prep<=0){ E.mode="run"; $("prep").classList.remove("on"); }
+    else { $("prepTx").textContent = Math.ceil(E.prep); }
+  }
+  if(E.mode==="run"){
+    const ph = E.tl[E.idx];
+    E.t += dt*E.speed; E.elapsed += dt;
+    if(E.t >= ph.sec){
+      E.t = 0; E.idx = (E.idx+1) % E.tl.length;
+      E.switches++;
+      if(E.idx===0){
+        E.cycle++;
+        if(E.cycle > E.course.cycles){ return finish(); }
+      }
+      const nx = E.tl[E.idx];
+      buzz(); beep(nx.k==="inhale"?520:(nx.k==="exhale"?330:660));
+    }
+    paint();
+  }
+  requestAnimationFrame(loop);
+}
+
+function paint(){
+  const ph = E.tl[E.idx]; if(!ph) return;
+  const prog = Math.min(1, E.t/ph.sec), total = E.tl.reduce((a,b)=>a+b.sec,0);
+  const done = (E.cycle-1)*total + E.tl.slice(0,E.idx).reduce((a,b)=>a+b.sec,0) + E.t;
+  const lvl = levelOf({k:ph.k, p:prog});
+  drawTrack(E.course.shape, Math.min(1, done/(total*E.course.cycles)));
+  drawBall(E.course.shape, prog, lvl, ph.k==="hold"||ph.k==="hold2");
+  $("phaseTx").textContent = PHASE_TX[ph.k];
+  $("countTx").textContent = Math.max(1, Math.ceil(ph.sec - E.t));
+  $("gCycle").textContent = `循环 ${Math.min(E.cycle,E.course.cycles)}/${E.course.cycles}`;
+}
+
+function finish(){
+  E.mode = "done"; show("s-done");
+  $("doneName").textContent = E.course.name + " · " + E.course.tech;
+  $("kMin").textContent = (E.elapsed/60).toFixed(1);
+  $("kCyc").textContent = Math.max(1,E.cycle-1);
+  $("kPh").textContent = E.switches;
+}
+
+$("btnMain").onclick = ()=>{
+  if(E.mode==="list"){ start(cur); return; }
+  if(E.mode==="run"){ E.mode="paused"; $("btnMain").textContent="继续"; }
+  else if(E.mode==="paused"){ E.mode="run"; $("btnMain").textContent="暂停"; }
+};
+$("btnBack").onclick = ()=>{ E.mode="list"; show("s-list"); };
+$("btnStop").onclick = ()=>{ finish(); };
+$("btnShare").onclick = ()=>{ alert("这里生成分享卡片：本次 " + (E.elapsed/60).toFixed(1) + " 分钟"); };
+$("btnRemind").onclick = ()=>{ alert("订阅消息为一次性订阅 —— 练完顺手订下一条"); };
+
+function seg(id, key, onPick){
+  const el = $(id);
+  el.querySelectorAll("button").forEach(b=>{
+    b.onclick = ()=>{
+      el.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      onPick(b.dataset.v, key);
+    };
+  });
+}
+seg("segVis","sound", v=>{ E.sound = v==="1"; });
+seg("segHap","hap",   v=>{ E.hap   = v==="1"; });
+seg("segSpd","speed", v=>{ E.speed = parseFloat(v); });
+
+renderCards();
+requestAnimationFrame(loop);
+</script>
+<script>
+(function(){
+  var A = window.AndroidBridge; if(!A) return;
+  window.alert = function(m){ A.toast(String(m)); };
+  if(!navigator.vibrate){ navigator.vibrate = function(ms){ A.vibrate(ms||18); }; }
+  A.keepScreenOn(true);
+})();
+</script></body>
+</html>

@@ -1,0 +1,583 @@
+安卓版 v2 界面源码（按信息架构 v2 重写：4 个区 / 8 个方法 / 专项连播 / 档位升级）。
+
+结构变化对照 v1：新增底部四区导航（首页·方法·专项·我的）；方法卡新增**训练什么 / 难度 / 档位进度 / 推荐值**；引导器支持**连播**（专项课）；结束页给**档位 \+1 反馈**；新增高危方法的**屏息分诊**闸门；删掉 ★ 方法后渲染几何只需 **3 种**（方形轨道 / 圆环 / 连续波）。
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>呼吸 · 方法库与专项</title>
+<style>
+
+* {box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+body{margin:0;color:#e8eef8;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+background:radial-gradient(900px 480px at 14% -8%,#153a4d,transparent 55%),radial-gradient(760px 420px at 90% 3%,#3a1f52,transparent 52%),linear-gradient(170deg,#070c14,#0c1420 55%,#0a0f18);min-height:100vh}
+:root{--acc:#5ee0ff;--acc2:#b18cff;--warm:#ff9ecb;--card:rgba(255,255,255,.055);--st:rgba(255,255,255,.12);--dim:#93a4bd}
+.wrap{max-width:560px;margin:0 auto;padding:20px 16px 92px}
+.screen{display:none}.screen.on{display:block}
+h1{font-size:22px;margin:2px 0 4px;letter-spacing:.5px}
+.sub{font-size:12.5px;color:var(--dim)}
+.card{margin:11px 0;padding:15px 16px;border-radius:16px;background:var(--card);border:1px solid var(--st)}
+.card.tap{cursor:pointer;transition:.16s}.card.tap:active{transform:scale(.985)}
+.nm{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nm b{font-size:16px}
+.dots{font-size:11px;letter-spacing:2px;color:var(--acc)}
+.trains{font-size:12.5px;color:#bfd2e8;margin:7px 0 9px;line-height:1.5}
+.bar{font-size:11.5px;letter-spacing:1px;color:var(--acc2)}
+.rec{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:#d6def2;margin-top:6px}
+.tag{font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--st);color:#cfe0f5}
+.tag.e{border-color:rgba(177,140,255,.5);color:var(--acc2)}
+.tag.h{border-color:rgba(255,158,203,.6);color:var(--warm)}
+.tag.go{border-color:rgba(94,224,255,.5);color:var(--acc)}
+.sec{margin:22px 0 8px;font-size:13.5px;color:#cfe0f5;display:flex;align-items:center;gap:8px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0 4px}
+.chip{font-size:11.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--st);color:var(--dim);background:rgba(255,255,255,.04)}
+.chip.on{border-color:var(--acc);color:#eaf6ff;background:rgba(94,224,255,.14)}
+.big{padding:17px 18px;border-radius:18px;background:linear-gradient(120deg,rgba(94,224,255,.14),rgba(177,140,255,.13));border:1px solid rgba(255,255,255,.16)}
+.big b{font-size:18px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13.5px}
+.li:last-child{border-bottom:0}
+.li em{font-style:normal;color:var(--dim);font-size:12px}
+.kpi{display:flex;gap:10px;margin-top:12px}
+.kpi div{flex:1;padding:13px;border-radius:14px;background:var(--card);border:1px solid var(--st);text-align:center}
+.kpi b{display:block;font-size:21px;font-weight:400}
+.kpi em{font-style:normal;font-size:11px;color:var(--dim)}
+.hm{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+.hm i{height:14px;border-radius:4px;background:rgba(255,255,255,.07)}
+.hm i.f{background:linear-gradient(135deg,var(--acc),var(--acc2))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(8,13,22,.92);border-top:1px solid var(--st);backdrop-filter:blur(18px);padding:7px 0 calc(7px + env(safe-area-inset-bottom))}
+.tabbar button{flex:1;background:none;border:0;color:var(--dim);font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0}
+.tabbar button.on{color:var(--acc)}
+.tabbar i{width:20px;height:20px;border-radius:7px;border:1.5px solid currentColor;opacity:.75}
+.ov{position:fixed;inset:0;background:#070c14;display:none;flex-direction:column;padding:18px 16px calc(22px + env(safe-area-inset-bottom))}
+.ov.on{display:flex}
+.ov-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.gt{text-align:center;font-size:13.5px}.gt em{display:block;font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px}
+.ghost{background:rgba(255,255,255,.06);border:1px solid var(--st);color:#cfe0f5;font-size:12px;padding:7px 12px;border-radius:11px}
+.stage{position:relative;margin:10px auto 0;width:min(84vw,380px);aspect-ratio:1}
+canvas{width:100%;height:100%;display:block}
+.hud{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.ph{font-size:14px;color:#d9e8ff;letter-spacing:2px}
+.ct{font-size:46px;font-weight:250;font-variant-numeric:tabular-nums}
+.hd{font-size:11.5px;color:var(--dim);margin-top:3px}
+.pre{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,10,18,.72);border-radius:50%}
+.pre.on{display:flex}.pre span{font-size:56px;font-weight:250;color:var(--acc)}
+.ctl{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.seg{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--st);border-radius:12px;overflow:hidden}
+.seg button{flex:1;background:none;border:0;color:var(--dim);font-size:12px;padding:9px}
+.seg button.on{background:rgba(94,224,255,.16);color:#eaf6ff}
+.main{width:100%;padding:15px;border-radius:14px;border:0;font-size:15.5px;font-weight:600;background:linear-gradient(100deg,var(--acc),var(--acc2));color:#06131b}
+.minor{width:100%;padding:14px;border-radius:14px;border:1px solid var(--st);font-size:14.5px;background:rgba(255,255,255,.06);color:#dceaff}
+.fin{margin-top:22px;text-align:center}.fin h2{font-size:25px;font-weight:300;margin:0 0 6px}
+.up{display:inline-block;margin-top:10px;font-size:13px;padding:7px 14px;border-radius:999px;background:rgba(94,224,255,.16);color:#eaf6ff;border:1px solid rgba(94,224,255,.4)}
+.sheet{position:absolute;inset:0;display:none;align-items:flex-end;background:rgba(4,7,12,.66)}
+.sheet.on{display:flex}
+.sheet .in{width:100%;background:#0d1523;border-radius:20px 20px 0 0;padding:20px;border-top:1px solid var(--st)}
+.sheet h3{margin:0 0 10px;font-size:16px}
+.sheet p{font-size:12.5px;color:var(--dim);line-height:1.7;margin:0 0 14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 首页 ============ -->
+  <section id="s-home" class="screen on">
+    <h1>呼吸</h1>
+    <div class="sub" id="homeDate"></div>
+    <div class="card big" style="margin-top:16px" id="homeCard"></div>
+    <div class="sec">升级动态</div>
+    <div class="card">
+      <div class="nm"><b id="segName"></b><span class="tag e" id="segCnt"></span></div>
+      <div class="trains" id="segTip"></div>
+      <div class="hm" id="homeHeat"></div>
+    </div>
+    <div class="sec">常用方法</div>
+    <div id="homeQuick"></div>
+  </section>
+
+  <!-- ============ 方法 ============ -->
+  <section id="s-methods" class="screen">
+    <h1>方法</h1>
+    <div class="sub">先练能力，再谈场景 · 共 8 个方法（★ 及以上）</div>
+    <div class="chips" id="chips"></div>
+    <div id="methodList"></div>
+  </section>
+
+  <!-- ============ 专项 ============ -->
+  <section id="s-spec" class="screen">
+    <h1>专项</h1>
+    <div class="sub">按运动的时机编排，内部是方法的组合</div>
+    <div id="specList"></div>
+  </section>
+
+  <!-- ============ 我的 ============ -->
+  <section id="s-mine" class="screen">
+    <h1>我的</h1>
+    <div class="sub">段位与成长</div>
+    <div class="card big" style="margin-top:16px">
+      <div class="nm"><b id="mLv"></b><span class="tag go" id="mUnlock"></span></div>
+      <div class="trains" id="mTip"></div>
+    </div>
+    <div class="kpi">
+      <div><b id="kMin">0</b><em>累计分钟</em></div>
+      <div><b id="kDays">0</b><em>连续天数</em></div>
+      <div><b id="kUp">0</b><em>本周升级</em></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="nm"><b>最近 28 天</b><span class="tag" id="hStat"></span></div>
+      <div class="hm" id="mineHeat"></div>
+    </div>
+    <div class="card">
+      <div class="li"><span>骑行日提醒</span><em>出发前 30 分钟</em></div>
+      <div class="li"><span>睡前提醒</span><em>22:30</em></div>
+      <div class="li"><span>声音引导</span><em>开</em></div>
+      <div class="li"><span>相位震动</span><em>开</em></div>
+      <div class="li"><span>屏幕常亮</span><em>跟练期间</em></div>
+      <div class="li"><span>证据来源说明</span><em>研究报告 ›</em></div>
+      <div class="li"><span>免责声明</span><em>非医疗建议</em></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ 底部导航 ============ -->
+<nav class="tabbar" id="tabbar">
+  <button data-t="home" class="on"><i></i>首页</button>
+  <button data-t="methods"><i></i>方法</button>
+  <button data-t="spec"><i></i>专项</button>
+  <button data-t="mine"><i></i>我的</button>
+</nav>
+
+<!-- ============ 引导器（全屏） ============ -->
+<section id="g" class="ov">
+  <div class="ov-top">
+    <button class="ghost" id="gBack">退出</button>
+    <div class="gt"><b id="gName"></b><em id="gStep"></em></div>
+    <button class="ghost" id="gSkip">跳过</button>
+  </div>
+  <div class="stage">
+    <canvas id="cv" width="720" height="720"></canvas>
+    <div class="hud"><div class="ph" id="phTx">—</div><div class="ct" id="ctTx">0</div><div class="hd" id="hdTx"></div></div>
+    <div class="pre" id="pre"><span id="preTx">3</span></div>
+  </div>
+  <div class="ctl">
+    <div class="seg" id="segSpd">
+      <button data-v="1" class="on">标准</button><button data-v="1.35">慢</button><button data-v="1.7">更慢</button>
+    </div>
+    <button class="main" id="gMain">暂停</button>
+  </div>
+  <div class="sheet" id="sheet">
+    <div class="in">
+      <h3>屏息类安全筛查</h3>
+      <p>本方法含屏息。若你有以下任一情况，请勿练习：孕期 · 癫痫 · 心血管疾病 · 未控制高血压 · 眩晕史 · 惊恐障碍史。<br>练习中若头晕、手麻、耳鸣，立即停止并恢复自然呼吸。<br>禁止在水中、驾驶、骑行中使用。</p>
+      <button class="main" id="shOK">我确认无以上情况，开始</button>
+      <button class="minor" style="margin-top:9px" id="shNo">取消</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 结束页 ============ -->
+<section id="d" class="ov">
+  <div class="fin">
+    <h2 id="dTx">又赢了一次</h2>
+    <div class="sub" id="dName"></div>
+    <div id="dUp"></div>
+  </div>
+  <div class="kpi">
+    <div><b id="dMin">0</b><em>分钟</em></div>
+    <div><b id="dCyc">0</b><em>循环</em></div>
+    <div><b id="dStep">0</b><em>完成步骤</em></div>
+  </div>
+  <div class="ctl" style="margin-top:20px">
+    <button class="main" id="dShare">分享卡片</button>
+    <button class="minor" id="dHome">回到首页</button>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   §1 数据层：8 个方法（★ 及以上）+ 1 个专项
+   ============================================================ */
+const PHASE_TX = { inhale:"吸", inhale2:"补吸", hold:"屏", exhale:"呼", hold2:"持" };
+
+/* shape: square 方形轨道 / ring 圆环 / wave 连续波 */
+const METHODS = [
+  { id:"dia", name:"腹式呼吸", group:"基础", level:1, ev:"★★", shape:"wave", scene:["运动","睡前","放松"],
+    trains:"膈肌主导与呼吸深度 —— 把浅快的胸式改回呼吸的默认档",
+    phases:[{k:"inhale",s:4},{k:"exhale",s:6}], cyc:[10,10,10], dur:[180,300,480],
+    rec:["3 分钟","5 分钟","8 分钟"] },
+
+  { id:"sigh", name:"生理性叹息", group:"基础", level:1, ev:"★★", shape:"ring", scene:["专注","运动"],
+    trains:"急性交感回落 —— 一分钟内把心率与紧张压下来",
+    phases:[{k:"inhale",s:2},{k:"inhale2",s:1},{k:"exhale",s:6}], cyc:[3,5,10], rep:true,
+    rec:["3 次","5 次","10 次"] },
+
+  { id:"coh", name:"共振慢呼吸 5.5", group:"节律", level:2, ev:"★★★", shape:"wave", scene:["恢复","睡前","运动"],
+    trains:"迷走激活与 HRV —— 证据最强的恢复手段",
+    phases:[{k:"inhale",s:5.5},{k:"exhale",s:5.5}], cyc:[10,10,10], dur:[300,600,900],
+    rec:["5 分钟","10 分钟","15 分钟"] },
+
+  { id:"nose", name:"鼻腔呼吸训练", group:"效率", level:2, ev:"★★", shape:"wave", scene:["运动"],
+    trains:"通气效率 —— 运动中少过度通气，把呼吸交换率压在 1.0 以下",
+    phases:[{k:"inhale",s:4},{k:"exhale",s:4}], cyc:[10,10,10], dur:[300,480,600],
+    rec:["5 分钟","8 分钟","10 分钟"] },
+
+  { id:"box", name:"盒式呼吸 4-4-4-4", group:"节律", level:3, ev:"★★ 表现", shape:"square", scene:["专注","运动"],
+    trains:"节律控制 + 屏息耐受 + 注意力抑制",
+    phases:[{k:"inhale",s:4},{k:"hold",s:4},{k:"exhale",s:4},{k:"hold2",s:4}], cyc:[4,6,6],
+    l3phases:[{k:"inhale",s:6},{k:"hold",s:6},{k:"exhale",s:6},{k:"hold2",s:6}],
+    rec:["4 循环","6 循环","6-6-6-6 × 6"] },
+
+  { id:"temp", name:"节奏呼吸（踏频耦合）", group:"效率", level:3, ev:"★★", shape:"ring", scene:["运动"],
+    trains:"呼吸与运动节拍的耦合 —— 省力、稳定、可长时间维持",
+    phases:[{k:"inhale",beats:3},{k:"exhale",beats:2}], bpm:[80,90,90], cyc:[12,12,12],
+    l3phases:[{k:"inhale",beats:2},{k:"exhale",beats:1}],
+    rec:["80 rpm 吸3呼2","90 rpm 吸3呼2","吸2呼1"] },
+
+  { id:"imt", name:"呼吸肌训练 IMT", group:"进阶", level:4, ev:"★★★", shape:null, scene:["运动"],
+    trains:"吸气肌力量 —— 计时赛、力竭时间、Yo-Yo 表现",
+
+    phases:[ ], card:true,
+
+    rec:["30% MIP","40% MIP","60% MIP"] },
+
+  { id:"co2", name:"CO₂ 耐受 / 屏息", group:"进阶", level:5, ev:"★★", shape:"ring", scene:["运动","进阶"],
+    trains:"CO₂ 耐受与屏息能力 —— 化学感受器适应",
+    phases:[{k:"inhale",s:4},{k:"exhale",s:4}], ramp:{k:"hold",from:8,step:5}, cyc:[5,5,5],
+    rec:["BOLT 自测","逐轮 +5 秒","逐轮 +10 秒"], safety:"high" }
+];
+
+const SPECIALTIES = [
+  { id:"cycling", name:"骑行专区", desc:"按下车的时机排，内部是方法的组合",
+    courses:[
+      { name:"骑前唤醒", when:"出门前 / 上骑行台前", dur:"约 6 分钟",
+        steps:[{id:"dia",lv:0},{id:"box",lv:0}] },
+      { name:"骑行节奏呼吸", when:"行进中", dur:"全过程",
+        steps:[{id:"temp",lv:1}] },
+      { name:"骑后恢复", when:"到家拉伸时", dur:"8 分钟",
+        steps:[{id:"coh",lv:1}] },
+      { name:"关键时刻", when:"出发前 / 爬坡前", dur:"2 分钟",
+        steps:[{id:"box",lv:0}] }
+    ] }
+];
+
+/* ============================================================
+   §2 档位与升级机制
+   ============================================================ */
+const NEED = [3,5];                       // 连 L1 3 次升 L2；连 L2 5 次升 L3
+const P = {};                             // {methodId:{lv,streak,done}}
+METHODS.forEach(m => P[m.id] = { lv:1, streak:0, done:0 });
+let TOT = 0, UPG = 0, MIN = 0, DAYS = 1, heat = new Array(28).fill(0);
+
+function dots(n){ return "●".repeat(n) + "○".repeat(5-n); }
+function bar(lv){ return "●".repeat(lv) + "○".repeat(3-lv); }
+function unlocked(){ return METHODS.reduce((a,m)=>a+P[m.id].lv,0); }
+
+/* ============================================================
+   §3 引导器引擎（相位时间轴 + 3 种几何）
+   ============================================================ */
+const cv = document.getElementById("cv"), g = cv.getContext("2d");
+const W = 720, C = W/2;
+
+const E = { list:[ ], si:0, m:null, tl:[ ], idx:0, t:0, cyc:1, mode:"idle",
+
+            speed:1, elapsed:0, switches:0, holdAdd:0 };
+
+function tlOf(m, lv){
+  let ph = (lv>=3 && m.l3phases) ? m.l3phases : m.phases;
+  const bpm = m.bpm ? m.bpm[lv-1] : null;
+  let out = ph.map(p => ({ k:p.k, sec: p.beats!=null ? p.beats*(60/bpm) : p.s }));
+  if(m.ramp){ out = out.concat([{k:m.ramp.k, sec:m.ramp.from + E.holdAdd}]); }
+  return out;
+}
+function cycOf(m, lv){ return m.cyc[lv-1]; }
+
+function level01(){                        // 呼吸充盈度 0..1
+  const p = E.tl[E.idx]; if(!p) return 0;
+  const r = Math.min(1, E.t/p.sec);
+  if(p.k==="inhale")  return r;
+  if(p.k==="inhale2") return 0.75 + 0.25*r;
+  if(p.k==="hold")    return 1;
+  if(p.k==="exhale")  return 1-r;
+  return 0;
+}
+function draw(){
+  const m = E.m; if(!m) return;
+  g.clearRect(0,0,W,W); g.lineCap="round";
+  const glow = g.createRadialGradient(C,C,40,C,C,330);
+  glow.addColorStop(0,"rgba(94,224,255,.15)"); glow.addColorStop(1,"rgba(94,224,255,0)");
+  g.fillStyle=glow; g.fillRect(0,0,W,W);
+
+  const p = E.tl[E.idx], r = p ? Math.min(1,E.t/p.sec) : 0;
+  const total = E.tl.reduce((a,b)=>a+b.sec,0);
+  const prog = Math.min(1, ((E.cyc-1)*total + E.tl.slice(0,E.idx).reduce((a,b)=>a+b.sec,0) + E.t) / (total*E.cyc));
+
+  if(m.shape==="square"){
+    const s=240, rr=54, x0=C-s, y0=C-s, x1=C+s, y1=C+s;
+    g.beginPath(); g.moveTo(x0+rr,y0); g.lineTo(x1-rr,y0); g.quadraticCurveTo(x1,y0,x1,y0+rr);
+    g.lineTo(x1,y1-rr); g.quadraticCurveTo(x1,y1,x1-rr,y1); g.lineTo(x0+rr,y1);
+    g.quadraticCurveTo(x0,y1,x0,y1-rr); g.lineTo(x0,y0+rr); g.quadraticCurveTo(x0,y0,x0+rr,y0); g.closePath();
+    g.strokeStyle="rgba(255,255,255,.16)"; g.lineWidth=3; g.stroke();
+    const per=[[x0,y0,x1,y0],[x1,y0,x1,y1],[x1,y1,x0,y1],[x0,y1,x0,y0]], n=per.length;
+    const f=(E.idx+r)/n, sg=Math.min(n-1,Math.floor(f*n)), tt=f*n-sg, [ax,ay,bx,by]=per[sg];
+    g.beginPath(); g.arc(ax+(bx-ax)*tt, ay+(by-ay)*tt, 13, 0, 7);
+    g.fillStyle="#5ee0ff"; g.shadowColor="#5ee0ff"; g.shadowBlur=22; g.fill(); g.shadowBlur=0;
+  } else {
+    g.beginPath(); g.arc(C,C,250,0,7); g.strokeStyle="rgba(255,255,255,.16)"; g.lineWidth=3; g.stroke();
+    if(m.shape==="ring"){
+      g.beginPath(); g.arc(C,C,250,-Math.PI/2,-Math.PI/2+Math.PI*2*prog);
+      g.strokeStyle="rgba(94,224,255,.75)"; g.lineWidth=4; g.stroke();
+    } else {   // wave：连续波，无静止帧
+      g.beginPath();
+      for(let a=0;a<=6.3;a+=.05){
+        const rad = 250 + Math.sin(a*3 + prog*6.28)*10;
+        const x=C+Math.cos(a)*rad, y=C+Math.sin(a)*rad;
+        a===0 ? g.moveTo(x,y) : g.lineTo(x,y);
+      }
+      g.strokeStyle="rgba(94,224,255,.6)"; g.lineWidth=3; g.stroke();
+    }
+  }
+  const R = 44 + 62*level01();
+  const ball = g.createRadialGradient(C-14,C-18,8,C,C,R);
+  ball.addColorStop(0,"rgba(255,255,255,.9)"); ball.addColorStop(.45,"rgba(177,140,255,.72)");
+  ball.addColorStop(1,"rgba(94,224,255,.3)");
+  g.beginPath(); g.arc(C,C,R,0,7); g.fillStyle=ball; g.fill();
+  if(p && (p.k==="hold"||p.k==="hold2")){
+    const pu = 1+.06*Math.sin(Date.now()/220);
+    g.beginPath(); g.arc(C,C,(R+26)*pu,0,7); g.strokeStyle="rgba(255,158,203,.55)"; g.lineWidth=3; g.stroke();
+  }
+}
+
+function buzz(){ if(navigator.vibrate) navigator.vibrate(18); }
+
+let last = 0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!last) last = now;
+  const dt = Math.min(.05,(now-last)/1000); last = now;
+  if(E.mode==="prepare"){
+    E.pre -= dt;
+    if(E.pre<=0){ E.mode="run"; document.getElementById("pre").classList.remove("on"); }
+    else document.getElementById("preTx").textContent = Math.ceil(E.pre);
+  }
+  if(E.mode!=="run") return;
+  const p = E.tl[E.idx]; if(!p) return;
+  E.t += dt*E.speed; E.elapsed += dt;
+  if(E.t >= p.sec){
+    E.t = 0; E.idx++; E.switches++;
+    if(E.idx >= E.tl.length){                    // 本循环结束
+      E.idx = 0; E.cyc++;
+      if(E.cyc > cycOf(E.m, E.curLv)) return nextStep();
+      if(E.m.ramp) E.holdAdd += E.m.ramp.step;
+      E.tl = tlOf(E.m, E.curLv);
+    }
+    buzz();
+  }
+  paint();
+}
+function paint(){
+  const p = E.tl[E.idx]; if(!p) return;
+  draw();
+  document.getElementById("phTx").textContent = PHASE_TX[p.k] || "—";
+  document.getElementById("ctTx").textContent = Math.max(1, Math.ceil(p.sec - E.t));
+  document.getElementById("hdTx").textContent = "循环 " + Math.min(E.cyc, cycOf(E.m,E.curLv)) + "/" + cycOf(E.m,E.curLv);
+}
+
+/* ---- 连播 ---- */
+function nextStep(){
+  E.si++;
+  if(E.si >= E.list.length) return finish();
+  loadStep();
+}
+function loadStep(){
+  const st = E.list[E.si];
+  E.m = METHODS.find(x=>x.id===st.id);
+  E.curLv = st.lv || P[E.m.id].lv;              // 专项课可指定档位
+  if(E.m.card){ E.si++; return E.list[E.si] ? loadStep() : finish(); }
+  E.tl = tlOf(E.m, E.curLv); E.idx=0; E.t=0; E.cyc=1; E.holdAdd=0;
+  E.mode = "prepare"; E.pre = 3;
+  document.getElementById("pre").classList.add("on");
+  document.getElementById("preTx").textContent = "3";
+  document.getElementById("gName").textContent = E.m.name;
+  document.getElementById("gStep").textContent =
+    (E.list.length>1 ? "步骤 " + (E.si+1) + "/" + E.list.length + " · " : "") + "L" + E.curLv + " · " + E.m.rec[E.curLv-1];
+  document.getElementById("gMain").textContent = "暂停";
+}
+function startPlaylist(list){
+  E.list = list; E.si = 0; E.elapsed = 0; E.switches = 0; E.mode="prepare";
+  const high = list.some(s => (METHODS.find(x=>x.id===s.id)||{}).safety === "high");
+  document.getElementById("g").classList.add("on");
+  document.getElementById("sheet").classList.remove("on");
+  if(high){ E.mode="idle"; document.getElementById("sheet").classList.add("on"); return; }
+  loadStep();
+}
+function finish(){
+  E.mode = "idle"; last = 0;
+  document.getElementById("g").classList.remove("on");
+  document.getElementById("d").classList.add("on");
+  // 档位推进
+  const st = E.list[0], m = METHODS.find(x=>x.id===st.id), p = P[m.id];
+  p.done++; p.streak++; MIN += E.elapsed/60; TOT++; heat[27] = 1;
+  let up = null;
+  if(p.lv < 3 && p.streak >= NEED[p.lv-1]){ p.lv++; p.streak = 0; UPG++; up = m.name + " 升到 L" + p.lv; }
+  document.getElementById("dName").textContent =
+    (E.list.length>1 ? "完成 " + E.list.length + " 个步骤 · " : "") + m.name;
+  document.getElementById("dMin").textContent = (E.elapsed/60).toFixed(1);
+  document.getElementById("dCyc").textContent = E.switches;
+  document.getElementById("dStep").textContent = E.list.length;
+  document.getElementById("dUp").innerHTML = up
+    ? '<div class="up">⬆ ' + up + ' · ' + m.rec[p.lv-1] + '</div>'
+    : '<div class="up">' + m.name + ' · ' + bar(p.lv) + ' · 再练 ' + (NEED[p.lv-1]-p.streak) + ' 次升级</div>';
+  renderAll();
+}
+
+/* ============================================================
+   §4 界面渲染
+   ============================================================ */
+const $ = id => document.getElementById(id);
+let curChip = "全部";
+
+function renderAll(){ renderMethods(); renderSpec(); renderMine(); renderHome(); }
+
+function renderMethods(){
+  const groups = ["基础","节律","效率","进阶"];
+  let h = "";
+  groups.forEach(gr=>{
+    const ms = METHODS.filter(m=>m.group===gr && (curChip==="全部" || m.scene.includes(curChip)));
+    if(!ms.length) return;
+    h += '<div class="sec">'+gr+'</div>';
+    ms.forEach(m=>{
+      const p = P[m.id];
+      h += '<div class="card tap" data-m="'+m.id+'">'
+        + '<div class="nm"><b>'+m.name+'</b><span class="dots">'+dots(m.level)+'</span></div>'
+        + '<div class="trains">训练：'+m.trains+'</div>'
+        + '<div class="rec"><span><span class="bar">'+bar(p.lv)+'</span> L'+p.lv+' · '+m.rec[p.lv-1]+'</span>'
+        + '<span class="tag e">'+m.ev+'</span></div>'
+        + (m.safety==="high" ? '<div class="rec"><span class="tag h">含屏息 · 需筛查</span></div>' : '')
+        + '</div>';
+    });
+  });
+  $("methodList").innerHTML = h;
+  document.querySelectorAll("[data-m]").forEach(el=>{
+    el.onclick = ()=> startPlaylist([{id:el.dataset.m}]);
+  });
+
+  const chips = ["全部","运动","睡前","专注","恢复"];
+  $("chips").innerHTML = chips.map(c=>'<span class="chip'+(c===curChip?" on":"")+'" data-c="'+c+'">'+c+'</span>').join("");
+  document.querySelectorAll("[data-c]").forEach(el=>{
+    el.onclick = ()=>{ curChip = el.dataset.c; renderMethods(); };
+  });
+}
+
+function renderSpec(){
+  $("specList").innerHTML = SPECIALTIES.map(s=>
+    '<div class="card big" style="margin-top:14px"><div class="nm"><b>'+s.name+'</b><span class="tag go">专项</span></div>'
+    + '<div class="trains">'+s.desc+'</div></div>'
+    + s.courses.map((c,i)=>
+        '<div class="card tap" data-s="'+s.id+'-'+i+'"><div class="nm"><b>'+c.name+'</b><span class="tag">'+c.dur+'</span></div>'
+        + '<div class="trains">'+c.when+' · '+c.steps.map(st=>METHODS.find(x=>x.id===st.id).name).join(" → ")+'</div></div>').join("")
+  ).join("") + '<div class="card"><div class="nm"><b>更多专项</b><span class="tag">跑步 / 力量</span></div><div class="trains">即将开放 —— 方法库不变，只加编排</div></div>';
+
+  document.querySelectorAll("[data-s]").forEach(el=>{
+    const [sid,i] = el.dataset.s.split("-");
+    const c = SPECIALTIES.find(x=>x.id===sid).courses[+i];
+    el.onclick = ()=> startPlaylist(c.steps);
+  });
+}
+
+function renderMine(){
+  $("mLv").textContent = "呼吸段位 · L" + (Math.floor(MIN/30)+1);
+  $("mUnlock").textContent = "已解锁 " + unlocked() + "/" + (METHODS.length*3);
+  $("mTip").textContent = "累计 " + MIN.toFixed(0) + " 分钟 · 完成 " + TOT + " 次 · 距下一段位还差 " + Math.max(0, 30-(MIN%30)).toFixed(0) + " 分钟";
+  $("kMin").textContent = MIN.toFixed(0);
+  $("kDays").textContent = DAYS;
+  $("kUp").textContent = UPG;
+  $("hStat").textContent = "完成 " + heat.filter(x=>x).length + " 天";
+  $("mineHeat").innerHTML = heat.map(v=>'<i class="'+(v?"f":"")+'"></i>').join("");
+}
+
+function renderHome(){
+  const d = new Date();
+  $("homeDate").textContent = (d.getMonth()+1) + " 月 " + d.getDate() + " 日 · 今天练什么";
+  const near = METHODS.map(m=>({m,p:P[m.id]})).filter(x=>x.p.lv<3)
+                      .sort((a,b)=>(NEED[a.p.lv-1]-a.p.streak)-(NEED[b.p.lv-1]-b.p.streak))[0];
+  if(near && NEED[near.p.lv-1]-near.p.streak <= 1){
+    $("homeCard").innerHTML = '<div class="nm"><b>再练 1 次升级</b><span class="tag go">'+near.m.name+' › L'+(near.p.lv+1)+'</span></div>'
+      + '<div class="trains">'+near.m.trains+'</div><div class="rec"><span>当前 L'+near.p.lv+' · '+near.m.rec[near.p.lv-1]+'</span><span class="tag e">'+near.m.ev+'</span></div>';
+    $("homeCard").onclick = ()=> startPlaylist([{id:near.m.id}]);
+  } else {
+    const c = SPECIALTIES[0].courses[1];
+    $("homeCard").innerHTML = '<div class="nm"><b>骑行节奏呼吸</b><span class="tag go">专项 · 骑行专区</span></div>'
+      + '<div class="trains">'+c.when+' · 吸 3 圈踏频 / 呼 2 圈踏频</div>'
+      + '<div class="rec"><span>L2 · 90 rpm</span><span class="tag e">耦合率 26.3% → 69.9%</span></div>';
+    $("homeCard").onclick = ()=> startPlaylist(c.steps);
+  }
+  $("segName").textContent = "呼吸段位 L" + (Math.floor(MIN/30)+1);
+  $("segCnt").textContent = UPG + " 次升级";
+  $("segTip").textContent = "已解锁 " + unlocked() + "/" + (METHODS.length*3) + " 档 · 连续 " + DAYS + " 天";
+  $("homeHeat").innerHTML = heat.slice(21).map(v=>'<i class="'+(v?"f":"")+'"></i>').join("");
+  const quick = METHODS.filter(m=>!m.card).slice(0,3);
+  $("homeQuick").innerHTML = quick.map(m=>{
+    const p=P[m.id];
+    return '<div class="card tap" data-q="'+m.id+'"><div class="nm"><b>'+m.name+'</b><span class="dots">'+dots(m.level)+'</span></div>'
+      + '<div class="trains">'+m.trains+'</div><div class="rec"><span><span class="bar">'+bar(p.lv)+'</span> L'+p.lv+' · '+m.rec[p.lv-1]+'</span><span class="tag e">'+m.ev+'</span></div></div>';
+  }).join("");
+  document.querySelectorAll("[data-q]").forEach(el=>{
+    el.onclick = ()=> startPlaylist([{id:el.dataset.q}]);
+  });
+}
+
+/* ============================================================
+   §5 交互
+   ============================================================ */
+document.querySelectorAll("#tabbar button").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll("#tabbar button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+    $("s-" + b.dataset.t).classList.add("on");
+    window.scrollTo(0,0);
+  };
+});
+$("gBack").onclick = ()=>{ E.mode="idle"; last=0; $("g").classList.remove("on"); };
+$("gSkip").onclick = ()=>{ E.mode="idle"; last=0; nextStep(); };
+$("gMain").onclick = ()=>{
+  if(E.mode==="run"){ E.mode="paused"; $("gMain").textContent="继续"; }
+  else if(E.mode==="paused"){ E.mode="run"; last=0; $("gMain").textContent="暂停"; }
+};
+$("shOK").onclick = ()=>{ $("sheet").classList.remove("on"); loadStep(); };
+$("shNo").onclick = ()=>{ $("sheet").classList.remove("on"); $("g").classList.remove("on"); };
+$("dShare").onclick = ()=>{ if(window.AndroidBridge) AndroidBridge.toast("分享卡片：本次 " + (E.elapsed/60).toFixed(1) + " 分钟"); };
+$("dHome").onclick = ()=>{ $("d").classList.remove("on"); };
+document.querySelectorAll("#segSpd button").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll("#segSpd button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); E.speed = parseFloat(b.dataset.v);
+  };
+});
+
+renderAll();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
+```
+
+## 这一版相对 v1 的改动
+
+| # | 改动 | 说明 |
+|---|------|------|
+| 1 | **底部四区导航** | 首页 / 方法 / 专项 / 我的，记录并入我的 |
+| 2 | **方法库 8 个** | ★ 门槛过滤后剩 8 个；每个卡片带**训练什么 / 难度 ●●●○○ / 档位进度 ●●○ / 推荐值 / 证据** |
+| 3 | **场景降级为筛选** | 方法页顶部一排 chip（全部/运动/睡前/专注/恢复），点一下筛，**不改内容归属** |
+| 4 | **专项独立成区** | 骑行专区 4 课按时机排 \+ "更多专项（跑步/力量）"占位卡 |
+| 5 | **引导器支持连播** | 专项课如"骑前唤醒"= 腹式 → 盒式 连续跑，顶部显示"步骤 1/2" |
+| 6 | **档位升级机制** | 连 L1 三次升 L2，连 L2 五次升 L3；结束页给"⬆ 升级"或"再练 N 次升级"反馈 |
+| 7 | **屏息分诊闸门** | CO₂ 耐受/屏息启动前弹安全筛查，确认后才进入 |
+| 8 | **渲染几何只需 3 种** | 方形轨道 / 圆环 / 连续波（删掉 ★ 方法后，姿态引导 G 原型没有承接者） |
+
+## 待补的（这一版有意留空）
+- **IMT 呼吸肌训练**标记为 `card:true`：它是科普卡（需器械），不进入跟练流程，点开应显示方法说明页 —— 下一版补这个说明页。
+- 数据是内存态（`const P = {}`），**关掉 App 会丢档位**。下一版接 `localStorage` 或小程序的 `wx.setStorageSync`，段位才真正立得住。
+- 热度图目前只点亮今天一格，接上真实记录后才成图。

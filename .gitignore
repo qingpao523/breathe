@@ -1,0 +1,14 @@
+*.apk
+*.idsig
+*.zip
+andapp/
+andmin/
+android/classes/
+android/dexout/
+android/base*.apk
+*.pyc
+__pycache__/
+.DS_Store
+.gradle/
+build/
+.idea/

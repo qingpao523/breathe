@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>呼吸小程序 · 产品方案 v1</title>
+<style>
+/* ===== Liquid Glass 设计系统（iOS 26 语言 · HTML 版）===== */
+:root {
+  --lg-blur: 24px; --lg-saturate: 180%; --lg-brightness: 1.08;
+  --lg-glass-bg: rgba(255,255,255,0.12); --lg-edge: rgba(255,255,255,0.22);
+  --lg-spec: rgba(255,255,255,0.45); --lg-drop: rgba(0,0,0,0.16);
+  --lg-radius-capsule: 9999px; --lg-radius-card: 22px; --lg-gutter: 20px;
+  --lg-fg: rgba(22,22,28,0.92); --lg-fg-2: rgba(22,22,28,0.60);
+  --lg-accent: #0a84ff; --lg-spring: cubic-bezier(0.34,1.56,0.64,1);
+  --br-inhale:#0a84ff; --br-hold:#bf5af2; --br-exhale:#30d1aa; --br-idle: rgba(120,140,180,0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --lg-brightness:0.85; --lg-glass-bg: rgba(28,28,32,0.45); --lg-edge: rgba(255,255,255,0.14);
+    --lg-spec: rgba(255,255,255,0.28); --lg-drop: rgba(0,0,0,0.42);
+    --lg-fg: rgba(245,245,250,0.95); --lg-fg-2: rgba(245,245,250,0.62); }
+}
+html[data-theme="dark"] { --lg-brightness:0.85; --lg-glass-bg: rgba(28,28,32,0.45); --lg-edge: rgba(255,255,255,0.14);
+  --lg-spec: rgba(255,255,255,0.28); --lg-drop: rgba(0,0,0,0.42);
+  --lg-fg: rgba(245,245,250,0.95); --lg-fg-2: rgba(245,245,250,0.62); }
+html[data-theme="light"] { --lg-brightness:1.08; --lg-glass-bg: rgba(255,255,255,0.12); --lg-edge: rgba(255,255,255,0.22);
+  --lg-spec: rgba(255,255,255,0.45); --lg-drop: rgba(0,0,0,0.16);
+  --lg-fg: rgba(22,22,28,0.92); --lg-fg-2: rgba(22,22,28,0.60); }
+* { box-sizing: border-box; }
+body { margin:0; min-height:100vh; font-family:-apple-system,"SF Pro Text","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--lg-fg); -webkit-font-smoothing:antialiased; background:#eef1f7; }
+@media (prefers-color-scheme: dark){ body{ background:#0f1320; } }
+html[data-theme="dark"] body{ background:#0f1320; }
+html[data-theme="light"] body{ background:#eef1f7; }
+
+.lg-backdrop { position:fixed; inset:0; z-index:-1; overflow:hidden; background:linear-gradient(180deg,#e8ecf7 0%,#f4eee8 100%); }
+@media (prefers-color-scheme: dark){ .lg-backdrop{ background:linear-gradient(180deg,#0d1220 0%,#1a1520 100%); } }
+html[data-theme="dark"] .lg-backdrop{ background:linear-gradient(180deg,#0d1220 0%,#1a1520 100%); }
+html[data-theme="light"] .lg-backdrop{ background:linear-gradient(180deg,#e8ecf7 0%,#f4eee8 100%); }
+.lg-blob { position:absolute; border-radius:50%; opacity:.85; animation:lg-drift 26s ease-in-out infinite alternate; }
+html[data-theme="dark"] .lg-blob{ opacity:.6; }
+.blob-1{ width:720px;height:720px;top:-240px;left:-180px;background:radial-gradient(circle,rgba(64,132,255,.85) 0%,rgba(64,132,255,.35) 42%,rgba(64,132,255,0) 70%); }
+.blob-2{ width:680px;height:680px;top:16%;right:-240px;background:radial-gradient(circle,rgba(255,138,64,.8) 0%,rgba(255,138,64,.32) 42%,rgba(255,138,64,0) 70%);animation-delay:-8s; }
+.blob-3{ width:640px;height:640px;top:52%;left:-120px;background:radial-gradient(circle,rgba(178,110,255,.75) 0%,rgba(178,110,255,.3) 42%,rgba(178,110,255,0) 70%);animation-delay:-16s; }
+.blob-4{ width:560px;height:560px;bottom:-200px;right:4%;background:radial-gradient(circle,rgba(48,209,170,.65) 0%,rgba(48,209,170,.26) 42%,rgba(48,209,170,0) 70%);animation-delay:-20s; }
+@keyframes lg-drift { from{transform:translate3d(0,0,0) scale(1);} to{transform:translate3d(70px,50px,0) scale(1.15);} }
+
+.lg-glass { position:relative; isolation:isolate; border-radius:var(--lg-radius-capsule);
+  background-color:var(--lg-glass-bg); background-image:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0));
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  box-shadow: inset 0 0 0 1px var(--lg-edge), inset 0 6px 12px -6px var(--lg-spec), 0 8px 24px var(--lg-drop); }
+.lg-rect{ border-radius:var(--lg-radius-card); }
+.lg-refract::before{ content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:radial-gradient(120% 60% at 50% -20%, rgba(255,255,255,.40), transparent 55%); mix-blend-mode:screen; opacity:.8; z-index:-1; }
+.lg-toolbar { position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:10px; padding:10px var(--lg-gutter);
+  border-radius:0; box-shadow: inset 0 -1px 0 var(--lg-edge), 0 6px 24px rgba(0,0,0,.08); }
+.lg-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 16px; border:0;
+  border-radius:var(--lg-radius-capsule); background:none; font:600 15px/1.2 -apple-system,"PingFang SC",system-ui,sans-serif; color:var(--lg-fg); cursor:pointer; }
+.lg-btn:hover{ background:rgba(255,255,255,.10); }
+@media (max-width:640px){ .lg-glass{ --lg-blur:16px; --lg-saturate:160%; } }
+@media (prefers-reduced-motion: reduce){ .lg-blob{ animation:none; } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .lg-glass{ background-color: rgba(22,22,26,.88); } }
+
+/* ===== 版式 ===== */
+.lg-page { max-width:1000px; margin:0 auto; padding:0 var(--lg-gutter) 120px; }
+.lg-hero { padding:56px 0 8px; }
+.lg-hero h1 { font-size:clamp(28px,4.6vw,40px); margin:0 0 14px; letter-spacing:-0.02em; line-height:1.2; }
+.lg-hero .sub { font-size:16px; line-height:1.65; color:var(--lg-fg-2); max-width:42em; margin:0 0 8px; }
+.lg-kicker { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; font-size:12.5px; font-weight:650; letter-spacing:.06em; color:var(--lg-fg-2); margin-bottom:18px; }
+.lg-section-title { margin:66px 0 6px; font-size:13px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--lg-fg-2); }
+h2.lg-h2 { margin:8px 0 14px; font-size:clamp(22px,3vw,28px); letter-spacing:-0.01em; line-height:1.3; }
+h3.lg-h3 { font-size:17px; margin:28px 0 8px; letter-spacing:-0.01em; }
+.lg-lead { font-size:15.5px; line-height:1.75; color:var(--lg-fg); margin:0 0 14px; max-width:46em; }
+.lg-lead.dim { color:var(--lg-fg-2); }
+.lg-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:16px; }
+.lg-card { padding:18px; border-radius:var(--lg-radius-card); color:var(--lg-fg); }
+.lg-card h3 { margin:0 0 6px; font-size:15.5px; font-weight:650; }
+.lg-card p { margin:0; font-size:13px; line-height:1.55; color:var(--lg-fg-2); }
+.kpi-num { font-size:28px; font-weight:750; letter-spacing:-0.02em; line-height:1.15; margin:2px 0 6px; font-variant-numeric:tabular-nums; }
+.kpi-num small { font-size:14px; font-weight:650; color:var(--lg-fg-2); margin-left:2px; }
+.kpi-label { font-size:12px; font-weight:650; letter-spacing:.05em; color:var(--lg-fg-2); text-transform:uppercase; }
+.lg-table-wrap { margin-top:16px; padding:6px 10px; border-radius:var(--lg-radius-card); overflow-x:auto; }
+table.lg-table { border-collapse:collapse; width:100%; font-size:13.5px; min-width:620px; }
+.lg-table th { text-align:left; padding:11px 10px; color:var(--lg-fg-2); font-weight:650; font-size:12.5px; letter-spacing:.03em; border-bottom:1px solid rgba(127,127,140,.28); white-space:nowrap; }
+.lg-table td { padding:11px 10px; border-bottom:1px solid rgba(127,127,140,.14); vertical-align:top; line-height:1.55; }
+.lg-table tr:last-child td { border-bottom:0; }
+.lg-table td b { font-weight:650; }
+.pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:650; }
+.pill.p0 { background:rgba(48,209,88,.22); color:#248a3d; }
+.pill.p1 { background:rgba(10,132,255,.20); color:#0a6ad1; }
+.pill.p2 { background:rgba(127,127,140,.20); color:var(--lg-fg-2); }
+html[data-theme="dark"] .pill.p0 { color:#6ee7a0; }
+html[data-theme="dark"] .pill.p1 { color:#7ab8ff; }
+.lg-note { padding:16px 18px; border-radius:var(--lg-radius-card); margin-top:16px; font-size:14px; line-height:1.7; }
+.lg-note b { font-weight:680; }
+.lg-note.warn { border-left:3px solid #ff453a; }
+.lg-note.good { border-left:3px solid #30d158; }
+.lg-note.info { border-left:3px solid var(--lg-accent); }
+
+/* ===== 手机线框 ===== */
+.phone-row { display:flex; gap:18px; overflow-x:auto; padding:8px 2px 16px; margin-top:16px; scroll-snap-type:x mandatory; }
+.phone { flex:0 0 220px; scroll-snap-align:start; margin:0; }
+.phone-frame { border-radius:36px; padding:10px; }
+.phone-screen { border-radius:27px; min-height:452px; padding:14px 12px; display:flex; flex-direction:column; gap:9px;
+  background:linear-gradient(180deg, rgba(16,20,32,.92), rgba(24,20,34,.92)); color:rgba(245,245,250,.95); }
+.phone-screen.light-screen { background:linear-gradient(180deg, rgba(250,250,252,.92), rgba(238,240,246,.92)); color:rgba(22,22,28,.92); }
+.ph-status { display:flex; justify-content:space-between; font-size:10px; opacity:.55; }
+.ph-title { font-size:15px; font-weight:700; letter-spacing:-.01em; }
+.ph-sub { font-size:10.5px; opacity:.6; }
+.ph-card { border-radius:16px; padding:12px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10); }
+.light-screen .ph-card { background:rgba(0,0,0,.05); border-color:rgba(0,0,0,.06); }
+.ph-card-k { font-size:10px; opacity:.6; margin-bottom:8px; }
+.ph-card-t { font-size:13px; font-weight:650; }
+.ph-card-s { font-size:10.5px; opacity:.6; margin-top:2px; }
+.ph-ring { width:86px; height:86px; margin:6px auto 8px; border-radius:50%;
+  background:radial-gradient(circle at 38% 32%, rgba(255,255,255,.95) 0%, rgba(10,132,255,.75) 55%, rgba(48,120,255,.45) 100%);
+  box-shadow:0 0 0 8px rgba(127,140,175,.25), 0 8px 22px rgba(10,132,255,.35); }
+.ph-quick { display:flex; flex-wrap:wrap; gap:6px; }
+.ph-chip { font-size:10.5px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12); }
+.light-screen .ph-chip { background:rgba(0,0,0,.06); border-color:rgba(0,0,0,.07); }
+.ph-list { display:flex; flex-direction:column; gap:0; }
+.ph-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; padding:11px 2px; border-bottom:1px solid rgba(127,127,140,.18); }
+.ph-row:last-child { border-bottom:0; }
+.ph-row .v { opacity:.55; font-size:11px; }
+.ph-tabbar { margin-top:auto; display:flex; justify-content:space-around; font-size:10px; padding-top:9px; border-top:1px solid rgba(127,127,140,.20); opacity:.85; }
+.ph-tabbar .on { color:#7ab8ff; font-weight:700; }
+.light-screen .ph-tabbar .on { color:#0a6ad1; }
+.ph-progress { display:flex; justify-content:space-between; font-size:10.5px; opacity:.6; }
+.ph-guide { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+.ph-guide-svg { width:150px; height:150px; }
+.ph-phase { font-size:19px; font-weight:720; }
+.ph-count { font-size:26px; font-weight:750; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.ph-hint { font-size:10px; opacity:.5; text-align:center; }
+.ph-heat { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:4px 0 2px; }
+.ph-heat i { aspect-ratio:1; border-radius:4px; background:rgba(255,255,255,.10); display:block; }
+.light-screen .ph-heat i { background:rgba(0,0,0,.07); }
+figcaption { font-size:12px; color:var(--lg-fg-2); margin-top:10px; line-height:1.5; text-align:center; }
+
+/* 里程碑时间轴 */
+.tl { margin-top:18px; }
+.tl-item { display:grid; grid-template-columns:92px 1fr; gap:16px; padding:14px 0; border-bottom:1px solid rgba(127,127,140,.16); }
+.tl-item:last-child { border-bottom:0; }
+.tl-w { font-weight:700; font-size:14px; color:var(--lg-accent); }
+.tl-body b { font-weight:680; }
+.tl-body { font-size:13.5px; line-height:1.65; color:var(--lg-fg-2); }
+.tl-body .hi { color:var(--lg-fg); }
+
+.lg-footer { margin-top:56px; padding-top:18px; border-top:1px solid rgba(127,127,140,.2); font-size:12.5px; color:var(--lg-fg-2); line-height:1.7; }
+</style>
+</head>
+<body>
+
+<div class="lg-backdrop" aria-hidden="true">
+  <div class="lg-blob blob-1"></div><div class="lg-blob blob-2"></div>
+  <div class="lg-blob blob-3"></div><div class="lg-blob blob-4"></div>
+</div>
+
+<header class="lg-toolbar lg-glass">
+  <strong style="font-size:15px">呼吸小程序 · 产品方案</strong>
+  <span style="flex:1"></span>
+  <button class="lg-btn" id="themeToggle" title="切换深浅色">🌗</button>
+</header>
+
+<main class="lg-page">
+
+  <!-- Hero -->
+  <section class="lg-hero">
+    <span class="lg-kicker lg-glass lg-rect">v1 · 2026-09-23 · 微信小程序（个人主体）</span>
+    <h1>呼吸一下：<br>跟着圆环呼吸的小程序</h1>
+    <p class="sub">睡眠放松 + 运动训练双线并重，每节课都告诉你背后的证据。目标是<strong>自用先跑通，再给朋友用</strong>——
+      所以这份方案的重点不是商业化，而是：哪些必须做、哪些平台不让你做、4 周怎么落地。</p>
+  </section>
+
+  <!-- 一页纸 -->
+  <p class="lg-section-title">一页纸</p>
+  <h2 class="lg-h2">先看四个关键判断</h2>
+  <div class="lg-grid">
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">形态与类目</div>
+      <div class="kpi-num" style="font-size:20px">个人主体 ✓</div>
+      <p>可选「体育 &gt; 在线健身」「工具 &gt; 健康管理」，<b>均无资质要求</b>——不需要企业主体，也不用碰医疗资质。</p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">发布路径</div>
+      <div class="kpi-num" style="font-size:20px">体验版先行</div>
+      <p>开发版/体验版可先给朋友用（加为体验成员）；正式对外发布前再完成小程序备案。</p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">最大的技术风险</div>
+      <div class="kpi-num" style="font-size:20px">锁屏播放？</div>
+      <p>助眠场景依赖"锁屏后音频继续响"。这条<strong>必须在开工第一天验证</strong>，方案里已备好两级降级。</p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">周期</div>
+      <div class="kpi-num">4<small>周</small></div>
+      <p>W1 技术验证 + 引擎移植，W2 能自己天天用，W3 能发给朋友，W4 上线体验版。</p>
+    </div>
+  </div>
+
+  <!-- 差异化 -->
+  <p class="lg-section-title">差异化</p>
+  <h2 class="lg-h2">为什么值得自己做，而不是下一个现成的</h2>
+  <p class="lg-lead dim">自用产品不比全面，只需要三个"别人没有的理由"。</p>
+  <div class="lg-grid">
+    <div class="lg-card lg-glass lg-rect"><h3>① 证据透明</h3>
+      <p>每节课带一张"证据卡片"：出处、样本量、关键数字。国内没人这么做，而且直接复用调研成果，不用重新生产内容。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>② 动效即节拍</h3>
+      <p>方盒走方形轨道（屏息时停在角上）、4-7-8 走圆环、共振走连续波浪环——形状本身就是节拍的说明书。引擎已经在调研报告的 HTML 里跑通。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>③ 运动线是空白</h3>
+      <p>骑行节奏呼吸（吸 3 圈踏频/呼 2 圈）+ 鳄鱼式/90-90 姿态，现有产品没人做运动场景。调研有直接证据：声引导让呼吸-步频耦合率 26%→70%。</p></div>
+  </div>
+
+  <!-- 场景 -->
+  <p class="lg-section-title">场景</p>
+  <h2 class="lg-h2">"双线并重"落在四个场景上</h2>
+  <p class="lg-lead dim">不体现在首页入口数量，而体现在——睡前和骑车，各自都有完整的"进场-练习-收尾"。</p>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>场景</th><th>触发时机</th><th>时长</th><th>技法组合</th><th>成功信号</th></tr>
+      <tr><td><b>睡前关机</b></td><td>22:30-23:30 躺下后</td><td>10-20 分钟</td><td>4-7-8（仪式）→ 共振 6 次/分</td><td>一周 ≥4 晚完成</td></tr>
+      <tr><td><b>白天急救</b></td><td>会议前、情绪上头</td><td>1-2 分钟</td><td>生理性叹息 ×5</td><td>单日可多次触发</td></tr>
+      <tr><td><b>骑前唤醒</b></td><td>出门前 / 上骑行台前</td><td>3-5 分钟</td><td>鳄鱼式呼吸 + 方盒 4-4-4-4</td><td>骑行日必用</td></tr>
+      <tr><td><b>骑后收尾</b></td><td>到家拉伸时</td><td>5 分钟</td><td>4-4-6 简化版 / 90-90 呼吸</td><td>骑行日必用</td></tr>
+    </table>
+  </div>
+
+  <!-- 线框 -->
+  <p class="lg-section-title">界面骨架</p>
+  <h2 class="lg-h2">四个页面 + 一个全屏引导器</h2>
+  <p class="lg-lead dim">引导器是整个产品的价值所在——所有其他页面都只是为了让它被更省事地打开。</p>
+  <div class="phone-row">
+
+    <figure class="phone">
+      <div class="phone-frame lg-glass lg-refract">
+        <div class="phone-screen">
+          <div class="ph-status"><span>9:41</span><span>●●●</span></div>
+          <div class="ph-title">呼吸一下</div>
+          <div class="ph-sub">连续 6 晚 · 今晚 22:30 推荐</div>
+          <div class="ph-card">
+            <div class="ph-card-k">今晚推荐</div>
+            <div class="ph-ring"></div>
+            <div class="ph-card-t">睡前慢呼吸 · 6 次/分</div>
+            <div class="ph-card-s">15 分钟 · 点一下就开始</div>
+          </div>
+          <div class="ph-quick">
+            <span class="ph-chip">生理性叹息 1′</span>
+            <span class="ph-chip">方盒 5′</span>
+            <span class="ph-chip">骑前唤醒 5′</span>
+          </div>
+          <div class="ph-tabbar"><span class="on">首页</span><span>练习</span><span>记录</span><span>我的</span></div>
+        </div>
+      </div>
+      <figcaption>首页：按时间自动切推荐，一步开始</figcaption>
+    </figure>
+
+    <figure class="phone">
+      <div class="phone-frame lg-glass lg-refract">
+        <div class="phone-screen">
+          <div class="ph-progress"><span>共振呼吸 6 次/分</span><span>循环 3/6</span></div>
+          <div class="ph-guide">
+            <svg class="ph-guide-svg" viewBox="0 0 150 150" aria-hidden="true">
+              <defs>
+                <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#0a84ff"/><stop offset="55%" stop-color="#bf5af2"/><stop offset="100%" stop-color="#30d1aa"/>
+                </linearGradient>
+                <radialGradient id="bg2" cx="38%" cy="32%" r="75%">
+                  <stop offset="0%" stop-color="rgba(255,255,255,.95)"/>
+                  <stop offset="55%" stop-color="rgba(10,132,255,.75)"/>
+                  <stop offset="100%" stop-color="rgba(48,120,255,.45)"/>
+                </radialGradient>
+              </defs>
+              <circle cx="75" cy="75" r="58" fill="none" stroke="rgba(127,140,175,.35)" stroke-width="5"/>
+              <circle cx="75" cy="75" r="58" fill="none" stroke="url(#rg)" stroke-width="5" stroke-linecap="round"
+                      transform="rotate(-90 75 75)" stroke-dasharray="364" stroke-dashoffset="182"/>
+              <circle cx="75" cy="75" r="30" fill="url(#bg2)"/>
+              <text x="75" y="82" text-anchor="middle" font-size="20" font-weight="700" fill="rgba(255,255,255,.95)">4.2</text>
+            </svg>
+            <div class="ph-phase" style="color:#7ab8ff">吸气</div>
+            <div class="ph-count">剩 4.2 秒</div>
+            <div class="ph-hint">相位切换轻震一下 · 闭眼也能跟</div>
+          </div>
+          <div class="ph-tabbar"><span>暂停</span><span class="on">结束</span></div>
+        </div>
+      </div>
+      <figcaption>引导器：圆环 + 呼吸球 + 倒计时（震动引导）</figcaption>
+    </figure>
+
+    <figure class="phone">
+      <div class="phone-frame lg-glass lg-refract">
+        <div class="phone-screen light-screen">
+          <div class="ph-status"><span>9:41</span><span>●●●</span></div>
+          <div class="ph-title">练习记录</div>
+          <div class="ph-sub">本月 18 次 · 累计 214 分钟</div>
+          <div class="ph-card">
+            <div class="ph-card-k">本月热力图</div>
+            <div class="ph-heat" id="heat"></div>
+          </div>
+          <div class="ph-list">
+            <div class="ph-row"><span>连续天数</span><span class="v">6 天</span></div>
+            <div class="ph-row"><span>最常用技法</span><span class="v">共振呼吸</span></div>
+            <div class="ph-row"><span>30 天挑战</span><span class="v">进行中 12/30</span></div>
+          </div>
+          <div class="ph-tabbar"><span>首页</span><span>练习</span><span class="on">记录</span><span>我的</span></div>
+        </div>
+      </div>
+      <figcaption>记录：热力图 + 连续天数（留存的核心抓手）</figcaption>
+    </figure>
+
+    <figure class="phone">
+      <div class="phone-frame lg-glass lg-refract">
+        <div class="phone-screen">
+          <div class="ph-status"><span>9:41</span><span>●●●</span></div>
+          <div class="ph-title">我的</div>
+          <div class="ph-sub">设置</div>
+          <div class="ph-list">
+            <div class="ph-row"><span>睡前提醒</span><span class="v">22:30 ✓</span></div>
+            <div class="ph-row"><span>骑行日提醒</span><span class="v">未开启</span></div>
+            <div class="ph-row"><span>默认时长</span><span class="v">15 分钟</span></div>
+            <div class="ph-row"><span>声音 / 震动</span><span class="v">开 / 开</span></div>
+            <div class="ph-row"><span>屏幕常亮</span><span class="v">练时开启</span></div>
+            <div class="ph-row"><span>证据来源说明</span><span class="v">›</span></div>
+            <div class="ph-row"><span>免责声明</span><span class="v">非医疗建议 ›</span></div>
+          </div>
+          <div class="ph-tabbar"><span>首页</span><span>练习</span><span>记录</span><span class="on">我的</span></div>
+        </div>
+      </div>
+      <figcaption>我的：提醒、偏好与"证据来源"入口</figcaption>
+    </figure>
+
+  </div>
+
+  <!-- MVP -->
+  <p class="lg-section-title">范围</p>
+  <h2 class="lg-h2">MVP：P0 做到"自己每天都想打开"</h2>
+  <div class="lg-grid">
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <h3><span class="pill p0">P0</span> 第 1-2 周</h3>
+      <p>引导器引擎（方盒 / 4-7-8 / 共振 / 生理性叹息）；音频引导 + 后台播放；屏幕常亮；相位震动；本地记录；3 个快捷入口。<br><br><b>完成标志：睡前不用想、两步之内开始练。</b></p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <h3><span class="pill p1">P1</span> 第 3-4 周</h3>
+      <p>技法库扩到 12+（含瑜伽调息与运动组）；30 天睡前挑战；订阅消息提醒；分享卡片；记录页统计。<br><br><b>完成标志：发给朋友，对方能自己完成第一次练习。</b></p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <h3><span class="pill p2">P2</span> 1-2 个月后</h3>
+      <p>BLE 踏频/心率同步（圆环转速跟着踏频走）；鳄鱼式/90-90 姿态插画课；个人共振频率测试；云开发多设备同步。</p>
+    </div>
+  </div>
+  <div class="lg-note info lg-glass lg-rect"><b>明确不做</b>（自用版边界）：社交/排行榜、社区、AI 生成课程、iOS 虚拟支付、多语言。</div>
+
+  <!-- 技术 -->
+  <p class="lg-section-title">技术</p>
+  <h2 class="lg-h2">小程序能力对照与第一验证项</h2>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>需求</th><th>方案</th><th>注意点</th></tr>
+      <tr><td>圆环/方形动效</td><td><b>canvas 2d + requestAnimationFrame</b></td><td>小程序 WXML <b>不支持内联 SVG</b>，圆环必须用 canvas；现有 demo 的相位状态机与路径参数化可直接移植</td></tr>
+      <tr><td>音频引导</td><td>createInnerAudioContext + getBackgroundAudioManager</td><td>⚠️ 后台/锁屏播放有限制 → 第一验证项</td></tr>
+      <tr><td>屏幕常亮</td><td>wx.setKeepScreenOn(true)</td><td>跟练必备；睡前场景要配合自动结束防耗电</td></tr>
+      <tr><td>触觉</td><td>wx.vibrateShort({type:'light'})</td><td>相位切换时触发；部分 iOS 机型不支持</td></tr>
+      <tr><td>提醒</td><td>订阅消息（<b>一次性</b>订阅）</td><td>长期订阅仅限特定类目，健康/运动类目拿不到 → 设计成"练完顺手订下一条"</td></tr>
+      <tr><td>本地存储</td><td>wx.setStorageSync</td><td>自用足够；P2 再上云开发</td></tr>
+      <tr><td>分享</td><td>onShareAppMessage + canvas 海报</td><td>挑战卡片、单次记录卡片</td></tr>
+      <tr><td>蓝牙（P2）</td><td>BLE：踏频 0x1816 / 心率 0x180D</td><td>iOS/Android 权限与稳定性有差异，放最后做</td></tr>
+    </table>
+  </div>
+
+  <div class="lg-note warn lg-glass lg-rect">
+    <b>开工第一天要做的验证（半天出结论）——这是方案里唯一的高风险假设。</b><br><br>
+    <b>1. 后台音频</b>：写 20 行 demo 播 10 分钟音频，测切后台 / 锁屏 / 息屏三种状态下是否继续（iOS + Android 各一遍），并确认 app.json 的 <code>requiredBackgroundModes:["audio"]</code> 声明要求。<br>
+    <b>2. 降级方案</b>：Plan B = 屏幕常亮 + 音频 + 20 分钟自动渐弱停止（睡着后自己关）；Plan C = 助眠长音频放公众号音频/视频号，小程序只做提醒与跳转。<br>
+    <b>3. 帧率</b>：中低端安卓机上测圆环动画，掉到 30fps 以下就降级成 CSS 动画。
+  </div>
+
+  <!-- 课程 -->
+  <p class="lg-section-title">内容</p>
+  <h2 class="lg-h2">第一批 16 节课的骨架</h2>
+  <p class="lg-lead dim">每节课的数据结构：<code>技法 / 时长 / 动效类型 / 音轨 / 证据出处</code>。</p>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>组</th><th>课程</th><th>时长</th><th>动效</th><th>证据要点</th></tr>
+      <tr><td rowspan="4"><b>睡眠组</b></td><td>睡前慢呼吸 6 次/分</td><td>15 分钟</td><td>连续波浪环</td><td>30 天 PSQI 改善 d=0.51</td></tr>
+      <tr><td>4-7-8 助眠仪式</td><td>5 分钟</td><td>圆环+屏息倒计时</td><td>生理证据弱、主观口碑强 → 标"仪式型"</td></tr>
+      <tr><td>4-7-8 慢速版 6-8-10</td><td>6 分钟</td><td>圆环</td><td>给屏息不适者</td></tr>
+      <tr><td>身体扫描呼吸</td><td>10 分钟</td><td>极缓慢呼吸球</td><td>正念呼吸对照疗法</td></tr>
+      <tr><td rowspan="4"><b>减压组</b></td><td>生理性叹息（急救）</td><td>1 分钟</td><td>双段扩张</td><td>斯坦福 108 人：正性情绪提升最大</td></tr>
+      <tr><td>方盒 4-4-4-4</td><td>5 分钟</td><td>方形轨道</td><td>警察模拟研究：表现提升</td></tr>
+      <tr><td>4-4-6 简化版</td><td>3 分钟</td><td>圆环</td><td>无第二次屏息的温和版</td></tr>
+      <tr><td>方盒进阶 6-6-6-6</td><td>6 分钟</td><td>方形轨道</td><td>进阶解锁</td></tr>
+      <tr><td rowspan="4"><b>运动组</b></td><td>骑前唤醒：鳄鱼式 + 方盒</td><td>5 分钟</td><td>姿态指导+方形</td><td>膈肌激活；骑行进化论卡片一号动作</td></tr>
+      <tr><td>90/90 呼吸</td><td>4 分钟</td><td>姿态指导</td><td>横膈膜-核心整合</td></tr>
+      <tr><td>骑行节奏呼吸</td><td>行进中</td><td>圆环随踏频</td><td>声引导耦合率 26%→70%</td></tr>
+      <tr><td>骑后恢复 4-4-6</td><td>5 分钟</td><td>圆环</td><td>副交感恢复</td></tr>
+      <tr><td><b>调息组</b></td><td>交替鼻孔 / 蜂鸣 / 三段式 / 清凉</td><td>4-8 分钟</td><td>双半环 / 圆环</td><td>100 名高血压研究；样本偏小需诚实标注</td></tr>
+    </table>
+  </div>
+  <div class="lg-note info lg-glass lg-rect">
+    <b>安全层（统一实现）：</b>屏息类课程进入前弹一次筛查（孕期 / 癫痫 / 心血管疾病 / 眩晕史），命中任意一项自动切换无屏息版本；所有页面底部固定"非医疗建议"声明。
+  </div>
+
+  <!-- 风险 -->
+  <p class="lg-section-title">风险</p>
+  <h2 class="lg-h2">七个已知风险与对策</h2>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>风险</th><th>影响</th><th>对策</th></tr>
+      <tr><td>锁屏播放不可用</td><td>助眠场景崩塌</td><td>第 1 天验证；Plan B：常亮 + 渐弱自动停；Plan C：长音频转公众号</td></tr>
+      <tr><td>类目/资质</td><td>发布阻塞</td><td>已确认个人主体可选「体育&gt;在线健身」「工具&gt;健康管理」，无资质要求</td></tr>
+      <tr><td>备案</td><td>正式发布前置</td><td>体验版先跑，发布前完成备案（个人主体可备案）</td></tr>
+      <tr><td>医疗宣称</td><td>审核 + 合规</td><td>全程用"放松/训练/练习"，禁用"治疗/治愈/改善失眠"</td></tr>
+      <tr><td>屏幕常亮耗电</td><td>睡前体验</td><td>20 分钟自动结束 + 最后 60 秒音量渐弱</td></tr>
+      <tr><td>订阅消息受限</td><td>提醒触达弱</td><td>一次性订阅 + 场景化引导（练完顺手订下一条）</td></tr>
+      <tr><td>做完就吃灰</td><td>留存</td><td>30 天挑战 + 热力图 + 朋友圈分享卡（熟人监督最有效）</td></tr>
+    </table>
+  </div>
+
+  <!-- 里程碑 -->
+  <p class="lg-section-title">落地</p>
+  <h2 class="lg-h2">4 周做出可用的版本</h2>
+  <div class="tl">
+    <div class="tl-item"><div class="tl-w">W1</div><div class="tl-body"><span class="hi">技术验证 + 脚手架 + 引擎移植。</span>验收：锁屏播放结论明确；圆环在真机上跑起来。</div></div>
+    <div class="tl-item"><div class="tl-w">W2</div><div class="tl-body"><span class="hi">4 技法完整实现 + 音频 + 设置 + 本地记录。</span>验收：自己能完成一晚睡前练习并留存记录。</div></div>
+    <div class="tl-item"><div class="tl-w">W3</div><div class="tl-body"><span class="hi">技法库 12 节 + 30 天挑战 + 提醒 + 分享卡片。</span>验收：发给 3 个朋友，能独立完成一次练习。</div></div>
+    <div class="tl-item"><div class="tl-w">W4</div><div class="tl-body"><span class="hi">内容打磨 + 真机兼容 + 上线体验版。</span>验收：体验成员 ≥5 人，连续使用 ≥1 周。</div></div>
+  </div>
+
+  <!-- 追溯 -->
+  <p class="lg-section-title">追溯</p>
+  <h2 class="lg-h2">每个功能都能找到它的证据</h2>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>产品决策</th><th>依据（《呼吸法全景调研》）</th></tr>
+      <tr><td>默认技法用 6 次/分共振呼吸</td><td>Marchant 2025：HRV 增益显著优于方盒、4-7-8</td></tr>
+      <tr><td>保留 4-7-8 但标"仪式型"</td><td>Vierra 2022：生理指标不升反降；主观助眠口碑成立</td></tr>
+      <tr><td>生理性叹息做成 1 分钟急救课</td><td>Balban 2023：5 分钟/天即有情绪收益，五组中最高</td></tr>
+      <tr><td>新手第一课用简单节奏</td><td>依从率实测：6 次/分 90% vs 复杂节奏 74%</td></tr>
+      <tr><td>睡前课设计成 15-20 分钟</td><td>Laborde 2019：连续 30 天才出现 PSQI 与迷走活性改善</td></tr>
+      <tr><td>相位震动</td><td>触觉是闭眼场景第一通道（Breathwrk / Calm 均内置）</td></tr>
+      <tr><td>骑行节奏呼吸 + 踏频同步</td><td>Harbour 2023：声引导使耦合率 26.3%→69.9%</td></tr>
+      <tr><td>屏息类前置筛查</td><td>Wim Hof 有溺水死亡案例；Kapalabhati 有气胸病例报告</td></tr>
+      <tr><td>不做"治疗失眠"宣称</td><td>所有证据均为"改善/辅助"；个人主体类目不允许医疗宣称</td></tr>
+    </table>
+  </div>
+
+  <div class="lg-note good lg-glass lg-rect">
+    <b>下一步（按顺序）：</b>① 花半天做技术验证（唯一可能推翻方案的点）；② 注册小程序并确认类目「体育 &gt; 在线健身」；③ 直接开工 W1——把调研 HTML 里的圆环引擎移植成小程序 canvas 版本。
+  </div>
+
+  <div class="lg-footer">
+    呼吸小程序产品方案 v1 ｜ 2026-09-23 ｜ 配套正本：<b>呼吸小程序产品方案.md</b>；依据：《呼吸法全景调研》（同目录 MD + HTML）<br>
+    平台能力与类目信息核对自微信官方文档（服务类目表、订阅消息、BLE、备案 FAQ），截至 2026-09。
+  </div>
+
+</main>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === 'dark' ? 'light' : 'dark';
+});
+/* 热力图：伪造一个月的练习记录 */
+(function () {
+  const heat = document.getElementById('heat');
+  if (!heat) return;
+  const pattern = [1,2,3,1,0,3,2, 2,3,1,0,1,3,3, 0,1,2,3,3,1,0, 3,3,2,1,2,3,1, 0,2,3,3];
+  const levels = ['rgba(255,255,255,.10)', 'rgba(94,160,255,.35)', 'rgba(94,160,255,.62)', 'rgba(94,160,255,.95)'];
+  const lightLevels = ['rgba(0,0,0,.07)', 'rgba(10,132,255,.30)', 'rgba(10,132,255,.60)', 'rgba(10,132,255,.92)'];
+  const light = heat.closest('.light-screen') !== null;
+  pattern.slice(0, 35).forEach(v => {
+    const i = document.createElement('i');
+    i.style.background = (light ? lightLevels : levels)[v];
+    heat.appendChild(i);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>呼吸法全景调研 — 做一个呼吸训练 App 之前</title>
+<style>
+/* ==========================================================================
+   Liquid Glass Design System（iOS 26 液态毛玻璃 · HTML 版）
+   §1 token  §2 背景  §3 玻璃基类  §4 交互  §5 按钮  §6 容器
+   §7 工具栏  §8 卡片小组件  §9 变形  §10 响应式无障碍  §11 报告版式
+   ========================================================================== */
+:root {
+  --lg-blur: 24px;
+  --lg-saturate: 180%;
+  --lg-brightness: 1.08;
+  --lg-glass-bg: rgba(255, 255, 255, 0.12);
+  --lg-edge: rgba(255, 255, 255, 0.22);
+  --lg-spec: rgba(255, 255, 255, 0.45);
+  --lg-drop: rgba(0, 0, 0, 0.16);
+  --lg-radius-capsule: 9999px;
+  --lg-radius-card: 22px;
+  --lg-gutter: 20px;
+  --lg-fg: rgba(22, 22, 28, 0.92);
+  --lg-fg-2: rgba(22, 22, 28, 0.60);
+  --lg-accent: #0a84ff;
+  --lg-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 呼吸 demo 专用 */
+  --br-inhale: #0a84ff;
+  --br-hold: #bf5af2;
+  --br-exhale: #30d1aa;
+  --br-idle: rgba(120, 140, 180, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --lg-brightness: 0.85;
+    --lg-glass-bg: rgba(28, 28, 32, 0.45);
+    --lg-edge: rgba(255, 255, 255, 0.14);
+    --lg-spec: rgba(255, 255, 255, 0.28);
+    --lg-drop: rgba(0, 0, 0, 0.42);
+    --lg-fg: rgba(245, 245, 250, 0.95);
+    --lg-fg-2: rgba(245, 245, 250, 0.62);
+  }
+}
+html[data-theme="dark"] {
+  --lg-brightness: 0.85;
+  --lg-glass-bg: rgba(28, 28, 32, 0.45);
+  --lg-edge: rgba(255, 255, 255, 0.14);
+  --lg-spec: rgba(255, 255, 255, 0.28);
+  --lg-drop: rgba(0, 0, 0, 0.42);
+  --lg-fg: rgba(245, 245, 250, 0.95);
+  --lg-fg-2: rgba(245, 245, 250, 0.62);
+}
+/* 显式浅色覆盖：系统处于暗色时手动切浅色也必须成立（暗 token 来自媒体查询，需显式拉回） */
+html[data-theme="light"] {
+  --lg-brightness: 1.08;
+  --lg-glass-bg: rgba(255, 255, 255, 0.12);
+  --lg-edge: rgba(255, 255, 255, 0.22);
+  --lg-spec: rgba(255, 255, 255, 0.45);
+  --lg-drop: rgba(0, 0, 0, 0.16);
+  --lg-fg: rgba(22, 22, 28, 0.92);
+  --lg-fg-2: rgba(22, 22, 28, 0.60);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: var(--lg-fg);
+  -webkit-font-smoothing: antialiased;
+  background: #eef1f7;
+}
+@media (prefers-color-scheme: dark) { body { background: #0f1320; } }
+html[data-theme="dark"] body { background: #0f1320; }
+html[data-theme="light"] body { background: #eef1f7; }
+
+/* ── 背景画布 ─────────────────────────────────────────────────────────── */
+.lg-backdrop {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden;
+  background: linear-gradient(180deg, #e8ecf7 0%, #f4eee8 100%);
+}
+@media (prefers-color-scheme: dark) { .lg-backdrop { background: linear-gradient(180deg, #0d1220 0%, #1a1520 100%); } }
+html[data-theme="dark"] .lg-backdrop { background: linear-gradient(180deg, #0d1220 0%, #1a1520 100%); }
+html[data-theme="light"] .lg-backdrop { background: linear-gradient(180deg, #e8ecf7 0%, #f4eee8 100%); }
+.lg-blob { position: absolute; border-radius: 50%; opacity: 0.85; animation: lg-drift 26s ease-in-out infinite alternate; }
+html[data-theme="dark"] .lg-blob { opacity: 0.6; }
+.blob-1 { width: 720px; height: 720px; top: -240px; left: -180px;
+  background: radial-gradient(circle, rgba(64,132,255,0.85) 0%, rgba(64,132,255,0.35) 42%, rgba(64,132,255,0) 70%); }
+.blob-2 { width: 680px; height: 680px; top: 16%; right: -240px;
+  background: radial-gradient(circle, rgba(255,138,64,0.80) 0%, rgba(255,138,64,0.32) 42%, rgba(255,138,64,0) 70%);
+  animation-delay: -8s; }
+.blob-3 { width: 640px; height: 640px; top: 52%; left: -120px;
+  background: radial-gradient(circle, rgba(178,110,255,0.75) 0%, rgba(178,110,255,0.30) 42%, rgba(178,110,255,0) 70%);
+  animation-delay: -16s; }
+.blob-4 { width: 560px; height: 560px; bottom: -200px; right: 4%;
+  background: radial-gradient(circle, rgba(48,209,170,0.65) 0%, rgba(48,209,170,0.26) 42%, rgba(48,209,170,0) 70%);
+  animation-delay: -20s; }
+@keyframes lg-drift { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(70px,50px,0) scale(1.15); } }
+
+/* ── 玻璃基类 ─────────────────────────────────────────────────────────── */
+.lg-glass {
+  position: relative; isolation: isolate;
+  border-radius: var(--lg-radius-capsule);
+  background-color: var(--lg-glass-bg);
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.00));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  box-shadow:
+    inset 0 0 0 1px var(--lg-edge),
+    inset 0 6px 12px -6px var(--lg-spec),
+    0 8px 24px var(--lg-drop);
+}
+.lg-rect { border-radius: var(--lg-radius-card); }
+.lg-refract::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% -20%, rgba(255,255,255,0.40), transparent 55%);
+  mix-blend-mode: screen; opacity: 0.8; z-index: -1;
+}
+
+/* ── 交互反应 ─────────────────────────────────────────────────────────── */
+.lg-interactive { cursor: pointer; touch-action: manipulation; transition: transform 0.35s var(--lg-spring), box-shadow 0.25s ease; transform: translateZ(0); }
+.lg-interactive::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(130px circle at var(--lg-mx,50%) var(--lg-my,0%), rgba(255,255,255,0.30), transparent 65%);
+  opacity: 0; transition: opacity 0.3s ease;
+}
+@media (hover: hover) {
+  .lg-interactive:hover::after { opacity: 1; }
+  .lg-interactive:hover { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 8px 16px -8px rgba(255,255,255,0.60), 0 12px 32px var(--lg-drop); }
+}
+.lg-interactive:active { transform: translateZ(0) scale(0.96); transition-duration: 0.12s; }
+.lg-interactive:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--lg-edge), 0 0 0 3px color-mix(in srgb, var(--lg-accent) 55%, transparent), 0 8px 24px var(--lg-drop); }
+
+/* ── 按钮 ─────────────────────────────────────────────────────────────── */
+.lg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 22px; border: 0; border-radius: var(--lg-radius-capsule); background: none;
+  font: 600 15px/1.2 -apple-system, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
+  color: var(--lg-fg); white-space: nowrap;
+}
+.lg-prominent {
+  color: #fff;
+  background-color: color-mix(in srgb, var(--lg-accent) 72%, rgba(255,255,255,0.10));
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.02));
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25), inset 0 1px 0 rgba(255,255,255,0.40), 0 8px 24px color-mix(in srgb, var(--lg-accent) 42%, transparent);
+}
+
+/* ── 工具栏 ───────────────────────────────────────────────────────────── */
+.lg-toolbar {
+  position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 10px;
+  padding: 10px var(--lg-gutter); border-radius: 0;
+  box-shadow: inset 0 -1px 0 var(--lg-edge), 0 6px 24px rgba(0,0,0,0.08);
+}
+.lg-toolbar .lg-btn { padding: 9px 16px; -webkit-backdrop-filter: none; backdrop-filter: none; background: none; box-shadow: none; }
+.lg-toolbar .lg-btn:hover { background: rgba(255,255,255,0.10); }
+
+/* ── 分段控件 ─────────────────────────────────────────────────────────── */
+.lg-seg { position: relative; display: inline-flex; padding: 4px; border-radius: var(--lg-radius-capsule); max-width: 100%; overflow-x: auto; }
+.lg-seg button {
+  position: relative; z-index: 1; border: 0; background: none; cursor: pointer;
+  padding: 9px 16px; font: 600 14px/1 -apple-system, "PingFang SC", system-ui, sans-serif;
+  color: var(--lg-fg-2); border-radius: var(--lg-radius-capsule); transition: color 0.25s; white-space: nowrap;
+}
+.lg-seg button[aria-selected="true"] { color: var(--lg-fg); }
+.lg-seg-indicator {
+  position: absolute; top: 4px; left: 4px; height: calc(100% - 8px);
+  border-radius: var(--lg-radius-capsule);
+  background: rgba(255,255,255,0.45);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), 0 2px 8px rgba(0,0,0,0.10);
+  transition: transform 0.4s var(--lg-spring), width 0.4s var(--lg-spring);
+}
+html[data-theme="dark"] .lg-seg-indicator { background: rgba(255,255,255,0.22); }
+
+/* ── 响应式与无障碍 ───────────────────────────────────────────────────── */
+@media (max-width: 640px) { .lg-glass { --lg-blur: 16px; --lg-saturate: 160%; } }
+@media (prefers-reduced-motion: reduce) {
+  .lg-interactive, .lg-blob, .lg-seg-indicator, .lg-morph { transition: none; animation: none; }
+  .lg-interactive:active { transform: none; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg-glass { background-color: rgba(22, 22, 26, 0.88); }
+}
+
+/* ── 报告版式 ─────────────────────────────────────────────────────────── */
+.lg-page { max-width: 960px; margin: 0 auto; padding: 0 var(--lg-gutter) 120px; }
+.lg-hero { padding: 56px 0 8px; }
+.lg-hero h1 { font-size: clamp(28px, 4.6vw, 42px); margin: 0 0 14px; letter-spacing: -0.02em; line-height: 1.18; }
+.lg-hero .sub { font-size: 16px; line-height: 1.65; color: var(--lg-fg-2); max-width: 40em; margin: 0 0 8px; }
+.lg-kicker { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 650; letter-spacing: 0.06em; color: var(--lg-fg-2); margin-bottom: 18px; }
+
+.lg-section-title { margin: 72px 0 6px; font-size: 13px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lg-fg-2); }
+h2.lg-h2 { margin: 8px 0 14px; font-size: clamp(22px, 3vw, 28px); letter-spacing: -0.01em; line-height: 1.3; }
+.lg-lead { font-size: 15.5px; line-height: 1.75; color: var(--lg-fg); margin: 0 0 14px; max-width: 46em; }
+.lg-lead.dim { color: var(--lg-fg-2); }
+
+.lg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-top: 16px; }
+.lg-card { padding: 18px; border-radius: var(--lg-radius-card); color: var(--lg-fg); }
+.lg-card h3 { margin: 0 0 6px; font-size: 15.5px; font-weight: 650; }
+.lg-card p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--lg-fg-2); }
+.kpi-num { font-size: 30px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+.kpi-num small { font-size: 14px; font-weight: 650; color: var(--lg-fg-2); margin-left: 2px; }
+.kpi-label { font-size: 12px; font-weight: 650; letter-spacing: 0.05em; color: var(--lg-fg-2); text-transform: uppercase; }
+
+/* 表格（玻璃容器包裹） */
+.lg-table-wrap { margin-top: 16px; padding: 6px 10px; border-radius: var(--lg-radius-card); overflow-x: auto; }
+table.lg-table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 640px; }
+.lg-table th { text-align: left; padding: 11px 10px; color: var(--lg-fg-2); font-weight: 650; font-size: 12.5px; letter-spacing: 0.03em; border-bottom: 1px solid rgba(127,127,140,0.28); white-space: nowrap; }
+.lg-table td { padding: 11px 10px; border-bottom: 1px solid rgba(127,127,140,0.14); vertical-align: top; line-height: 1.55; }
+.lg-table tr:last-child td { border-bottom: 0; }
+.lg-table td b { font-weight: 650; }
+.stars { color: #ff9f0a; letter-spacing: 1px; white-space: nowrap; }
+.stars .off { color: rgba(127,127,140,0.35); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* 引用角标 */
+.cite { font-size: 11px; font-weight: 700; color: var(--lg-accent); text-decoration: none; vertical-align: super; line-height: 1; }
+.cite:hover { text-decoration: underline; }
+
+/* 高亮块 */
+.lg-note { padding: 16px 18px; border-radius: var(--lg-radius-card); margin-top: 16px; font-size: 14px; line-height: 1.7; }
+.lg-note b { font-weight: 680; }
+.lg-note.warn { border-left: 3px solid #ff453a; }
+.lg-note.good { border-left: 3px solid #30d158; }
+.lg-note.info { border-left: 3px solid var(--lg-accent); }
+
+/* ── 呼吸引导器 demo ─────────────────────────────────────────────────── */
+.demo-card { margin-top: 18px; padding: 20px; border-radius: 28px; }
+.demo-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.demo-stage { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 22px; align-items: center; margin-top: 10px; }
+@media (max-width: 760px) { .demo-stage { grid-template-columns: 1fr; } }
+.demo-svg-wrap { position: relative; width: 100%; max-width: 380px; margin: 0 auto; }
+.demo-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.demo-side { display: flex; flex-direction: column; gap: 14px; }
+.demo-phase { font-size: 26px; font-weight: 720; letter-spacing: -0.01em; min-height: 36px; display: flex; align-items: center; gap: 10px; }
+.demo-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--br-idle); transition: background 0.3s; }
+.demo-count { font-size: 15px; color: var(--lg-fg-2); font-variant-numeric: tabular-nums; }
+.demo-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 620; color: var(--lg-fg-2);
+  background: rgba(127,127,140,0.14); border: 1px solid rgba(127,127,140,0.18); transition: all 0.25s; }
+.chip.on { color: var(--lg-fg); background: rgba(255,255,255,0.40); border-color: rgba(255,255,255,0.60); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+html[data-theme="dark"] .chip.on { background: rgba(255,255,255,0.20); }
+.demo-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.demo-meta { font-size: 12.5px; color: var(--lg-fg-2); line-height: 1.6; }
+#ball { transform-origin: 160px 160px; }
+#ballGroup { transform-origin: 160px 160px; }
+.demo-hint { font-size: 12px; color: var(--lg-fg-2); margin-top: 10px; line-height: 1.6; }
+
+/* 参考来源列表 */
+.lg-refs { margin-top: 16px; padding: 20px 22px; border-radius: var(--lg-radius-card); }
+.lg-refs ol { margin: 0; padding-left: 22px; }
+.lg-refs li { font-size: 13px; line-height: 1.7; margin-bottom: 9px; color: var(--lg-fg-2); }
+.lg-refs li em { color: var(--lg-fg); font-style: normal; font-weight: 620; }
+.lg-refs a { color: var(--lg-accent); text-decoration: none; word-break: break-all; }
+.lg-refs a:hover { text-decoration: underline; }
+
+.lg-footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid rgba(127,127,140,0.2); font-size: 12.5px; color: var(--lg-fg-2); line-height: 1.7; }
+h3.lg-h3 { font-size: 17.5px; margin: 30px 0 8px; letter-spacing: -0.01em; }
+</style>
+</head>
+<body>
+
+<!-- 背景画布 -->
+<div class="lg-backdrop" aria-hidden="true">
+  <div class="lg-blob blob-1"></div>
+  <div class="lg-blob blob-2"></div>
+  <div class="lg-blob blob-3"></div>
+  <div class="lg-blob blob-4"></div>
+</div>
+
+<!-- 工具栏 -->
+<header class="lg-toolbar lg-glass">
+  <strong style="font-size:15px">呼吸法全景调研</strong>
+  <span style="flex:1"></span>
+  <button class="lg-btn lg-interactive" id="themeToggle" title="切换深浅色">🌗</button>
+</header>
+
+<main class="lg-page">
+
+  <!-- ══ Hero ══ -->
+  <section class="lg-hero">
+    <span class="lg-kicker lg-glass lg-rect">Deep Research · 2026-09-22 · 26 种呼吸法</span>
+    <h1>呼吸法调研：<br>哪些是真有用，哪些只是"感觉有用"</h1>
+    <p class="sub">从骑行进化论那张「鳄鱼式 + 方盒」卡片出发，把助眠、瑜伽调息、放松、运动圈的呼吸法查了个底朝天——
+      翻出 29 篇论文与产品资料，目标是回答一个问题：<b>这个呼吸训练 App，该收录哪些方法、怎么让用户跟着练下去。</b></p>
+    <p class="sub" style="font-size:13px">（MD 正本为完整版；本页是可交互的阅读版，含圆环引导器演示）</p>
+  </section>
+
+  <!-- 关键数字 -->
+  <div class="lg-grid">
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">慢呼吸的"共振点"</div>
+      <div class="kpi-num">6<small>次/分</small></div>
+      <p>吸 4-5 秒、呼 5-6 秒不停顿，HRV 增幅在此达到最大；也是个体化共振频率区间 4.5-6.5 的中枢值 <a class="cite" href="#r1">[1]</a><a class="cite" href="#r3">[3]</a><a class="cite" href="#r12">[12]</a></p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">呼吸减压的平均效应量</div>
+      <div class="kpi-num">g=-0.35</div>
+      <p>12 项随机对照试验元分析：压力 g=-0.35、焦虑 -0.32、抑郁 -0.40，小到中等效应 <a class="cite" href="#r10">[10]</a></p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">复杂节奏的代价（依从率）</div>
+      <div class="kpi-num">90<small>%</small> vs 74<small>%</small></div>
+      <p>同样的用户，6 次/分慢呼吸跟得上；方盒/4-7-8 的复杂节奏掉到约七成 <a class="cite" href="#r3">[3]</a></p>
+    </div>
+    <div class="lg-card lg-glass lg-rect lg-refract">
+      <div class="kpi-label">声引导的效果（跑步）</div>
+      <div class="kpi-num">26→70<small>%</small></div>
+      <p>呼吸与步频的耦合率：有声音节拍引导时从 26.3% 提升到 69.9% <a class="cite" href="#r16">[16]</a></p>
+    </div>
+  </div>
+
+  <!-- ══ 引导器 demo ══ -->
+  <p class="lg-section-title">交互演示</p>
+  <h2 class="lg-h2">圆环怎么转，用户才会跟着练</h2>
+  <p class="lg-lead">这就是你设想的"圆形循环跟练"的可运行版本：点开始，跟着圆环呼吸。切换技法看不同动效方案——
+      <b>方盒走方形轨道</b>（形状本身就是节拍说明书），<b>4-7-8 和共振呼吸走圆环</b>（带屏息倒计时 / 连续无停顿）。</p>
+
+  <div class="demo-card lg-glass lg-refract">
+    <div class="demo-head">
+      <div class="lg-seg lg-glass" id="demoSeg">
+        <span class="lg-seg-indicator" id="demoInd"></span>
+        <button aria-selected="true" data-key="box">方盒 4-4-4-4</button>
+        <button aria-selected="false" data-key="p478">4-7-8</button>
+        <button aria-selected="false" data-key="coherent">共振 6 次/分</button>
+        <button aria-selected="false" data-key="sigh">生理性叹息</button>
+      </div>
+      <div class="demo-controls">
+        <button class="lg-btn lg-prominent lg-interactive" id="demoToggle">开始</button>
+        <button class="lg-btn lg-glass lg-interactive" id="demoReset">重置</button>
+      </div>
+    </div>
+
+    <div class="demo-stage">
+      <div class="demo-svg-wrap">
+        <svg class="demo-svg" viewBox="0 0 320 320" role="img" aria-label="呼吸引导圆环">
+          <defs>
+            <linearGradient id="gradRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0a84ff"/>
+              <stop offset="55%" stop-color="#bf5af2"/>
+              <stop offset="100%" stop-color="#30d1aa"/>
+            </linearGradient>
+            <radialGradient id="gradBall" cx="38%" cy="32%" r="75%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.95)"/>
+              <stop offset="55%" stop-color="rgba(10,132,255,0.75)"/>
+              <stop offset="100%" stop-color="rgba(48,120,255,0.45)"/>
+            </radialGradient>
+          </defs>
+          <!-- 圆形轨道（圆环类技法） -->
+          <circle id="track" cx="160" cy="160" r="128" fill="none" stroke="rgba(127,140,175,0.35)" stroke-width="6"/>
+          <circle id="ringProgress" cx="160" cy="160" r="128" fill="none" stroke="url(#gradRing)" stroke-width="6"
+                  stroke-linecap="round" transform="rotate(-90 160 160)"
+                  stroke-dasharray="804.25" stroke-dashoffset="804.25"/>
+          <!-- 方形轨道（方盒） -->
+          <rect id="squareTrack" x="36" y="36" width="248" height="248" rx="42" fill="none"
+                stroke="rgba(127,140,175,0.35)" stroke-width="6"/>
+          <rect id="squareProgress" x="36" y="36" width="248" height="248" rx="42" fill="none"
+                stroke="url(#gradRing)" stroke-width="6" stroke-linecap="round"
+                stroke-dasharray="0 2000" stroke-dashoffset="0"/>
+          <circle id="sqDot" cx="36" cy="36" r="9" fill="#fff" stroke="#0a84ff" stroke-width="3" opacity="0"/>
+          <!-- 中心呼吸球 -->
+          <circle id="ball" cx="160" cy="160" r="62" fill="url(#gradBall)"/>
+          <!-- 倒计时数字 -->
+          <text id="countText" x="160" y="174" text-anchor="middle" font-size="34" font-weight="700"
+                fill="rgba(255,255,255,0.95)" style="font-variant-numeric: tabular-nums">6</text>
+        </svg>
+      </div>
+
+      <div class="demo-side">
+        <div class="demo-phase"><span class="demo-dot" id="phaseDot"></span><span id="phaseLabel">准备开始</span></div>
+        <div class="demo-count" id="demoCount">循环 0/5 · 一次循环 16 秒</div>
+        <div class="demo-chips" id="demoChips"></div>
+        <div class="demo-meta" id="demoDesc"></div>
+        <div class="demo-hint">提示：在手机上，阶段切换会触发一次轻震动（浏览器支持时）。正式 App 里这就是呼吸触觉引导的雏形。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 结论 ══ -->
+  <p class="lg-section-title">先说结论</p>
+  <h2 class="lg-h2">如果只读一段，读这五条</h2>
+  <div class="lg-grid" style="grid-template-columns:1fr">
+    <div class="lg-card lg-glass lg-rect"><h3>① 硬证据的核心只有两条半</h3>
+      <p>把呼吸放慢到约 6 次/分（吸 4-5 秒、呼 5-6 秒）；把呼气拉得比吸气略长；"半条"是屏息——对运动人群有价值，但对普通用户是风险项。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>② 流行度和生理增益排序不一致</h3>
+      <p>对 HRV：6 次/分 &gt; 4-7-8 ≈ 方盒。但 4-7-8 的助眠口碑真实存在——它是"仪式型"技法，作用是让睡前有事可做、有节奏可循 <a class="cite" href="#r7">[7]</a><a class="cite" href="#r3">[3]</a>。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>③ "跟着节拍"本身就是疗效的重要部分</h3>
+      <p>400 人实验里，5.5 次/分和 12 次/分两组改善幅度完全一致 <a class="cite" href="#r11">[11]</a>。App 的核心价值 = 可靠地带人进节拍、让人坚持——节拍器不是配角，是主角 <a class="cite" href="#r6">[6]</a>。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>④ 睡眠是证据最扎实的场景</h3>
+      <p>睡前 15-20 分钟慢呼吸：30 天改善睡眠质量（d=0.51）、夜间迷走活性提高 <a class="cite" href="#r4">[4]</a>；失眠者入睡潜伏期缩短、夜醒减少 <a class="cite" href="#r5">[5]</a>。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>⑤ 瑜伽调息是全品类的"内容库"</h3>
+      <p>放松（交替鼻孔、蜂鸣）、唤醒（圣光调息、风箱）、姿态整合（三段式）一应俱全；研究样本普遍偏小，但每条技法自带练习仪式——最适合被 App 数字化复刻 <a class="cite" href="#r15">[15]</a>。</p></div>
+  </div>
+
+  <!-- ══ 机制 ══ -->
+  <p class="lg-section-title">机制</p>
+  <h2 class="lg-h2">呼吸为什么能"拨动"身体：四条通路</h2>
+
+  <h3 class="lg-h3">2.1 慢呼吸把心脏"牵"进呼吸的节律里</h3>
+  <p class="lg-lead">吸气心率微升、呼气微降（呼吸性窦性心律不齐，RSA），这让心率变异性（HRV）成为"呼吸的影子" <a class="cite" href="#r25">[25]</a>。
+    呼吸放慢到 5-7 次/分时，呼吸节律与血压波动的压力反射发生共振，HRV 在约 6 次/分处被放到最大 <a class="cite" href="#r1">[1]</a>。
+    直接的数字：20 名高血压患者做 6 次/分呼吸，收缩压 149.7 → 141.1 mmHg、舒张压 82.7 → 77.8 mmHg，压力感受器敏感度几乎翻倍（5.8 → 10.3 ms/mmHg）；
+    26 名对照者也从 10.9 升到 16.0 ms/mmHg <a class="cite" href="#r8">[8]</a>。</p>
+  <p class="lg-lead">还有一条对 App 尤其重要：180 人实验显示，决定 HRV 收益的是<b>节拍</b>（6 次/分节奏器），而非口头指导——"深呼吸"还是"缓慢呼吸"的说法几乎不影响结果，
+    有节奏器的组增幅显著更大 <a class="cite" href="#r6">[6]</a>。</p>
+
+  <h3 class="lg-h3">2.2 CO2 是被忽略的主角</h3>
+  <p class="lg-lead">呼吸太快太深会把 CO2 吹跑（过度换气），血管收缩、脑供血下降，人觉得头晕手麻心慌——这正是惊恐发作的生理模型。
+    84 人实测四种技法 10 分钟后：6 次/分组呼出的 CO2 反而轻微下降（有过度换气倾向），方盒与 4-7-8 组因保留屏息，CO2 略有上升 <a class="cite" href="#r3">[3]</a>。
+    <b>慢呼吸拿 HRV 收益，屏息保 CO2 收益——互补，不是替代。</b></p>
+
+  <h3 class="lg-h3">2.3 叹息是身体自带的"重置键"</h3>
+  <p class="lg-lead">人每隔几分钟就会自发叹一次气：重新撑开塌陷的肺泡、重置呼吸节律，并与情绪调节环路直接相连。
+    把它主动化（双吸 + 长呼）= 生理性叹息。斯坦福 108 人 28 天研究中，它的正性情绪提升最大（+1.89 vs 正念冥想 +1.22），且呼吸频率下降与情绪改善正相关 <a class="cite" href="#r2">[2]</a>。</p>
+
+  <h3 class="lg-h3">2.4 迷走神经是大脑的"天线"</h3>
+  <p class="lg-lead">呼吸是人体唯一能随意控制的自律功能。有节奏地呼吸 = 反复刺激迷走传入纤维，间接影响前额叶的情绪调节环路（rVNS 模型）<a class="cite" href="#r14">[14]</a>。</p>
+
+  <!-- ══ 清单 ══ -->
+  <p class="lg-section-title">技法清单</p>
+  <h2 class="lg-h2" id="catalog">26 种呼吸法：怎么做、有没有用、坑在哪</h2>
+  <p class="lg-lead dim">证据强度：<span class="stars">★★★</span> 多项 RCT/元分析 ｜ <span class="stars">★★</span> 至少一项对照研究 ｜ <span class="stars">★</span> 传统实践/机制合理，缺高质量人体试验</p>
+
+  <h3 class="lg-h3">A. 放松与助眠</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>技法</th><th>怎么做（节奏）</th><th>证据</th><th>关键数字 / 注意</th></tr>
+      <tr><td><b>共振呼吸</b></td><td>吸 5 / 呼 5 或吸 4.5 / 呼 5.5，不停顿，10-15 分钟</td><td class="stars">★★★</td>
+        <td>成人共振频率个体化区间 4.5-6.5 次/分 <a class="cite" href="#r12">[12]</a>；6 次/分的 HRV 增益显著优于方盒、4-7-8 <a class="cite" href="#r3">[3]</a></td></tr>
+      <tr><td><b>睡前慢呼吸</b></td><td>6 次/分，睡前 15 分钟，连续 30 天</td><td class="stars">★★★</td>
+        <td>睡眠质量指数 3.31 → 2.91（d=0.51），夜间迷走活性 d=0.68 <a class="cite" href="#r4">[4]</a>；PSG 金标准小样本未见稳健睡眠结构改善 <a class="cite" href="#r23">[23]</a></td></tr>
+      <tr><td><b>失眠者节拍呼吸</b></td><td>6 次/分，睡前 20 分钟</td><td class="stars">★★</td>
+        <td>入睡潜伏期缩短、夜醒减少、睡眠效率提高 <a class="cite" href="#r5">[5]</a></td></tr>
+      <tr><td><b>4-7-8 呼吸</b></td><td>鼻吸 4 → 屏 7 → 口呼 8，4 循环起</td><td class="stars">★</td>
+        <td>生理证据最弱（HRV 不升反降）<a class="cite" href="#r7">[7]</a>，对比研究中垫底 <a class="cite" href="#r3">[3]</a>；但助眠主观口碑最强 → 定位"仪式型"</td></tr>
+      <tr><td><b>方盒 4-4-4-4</b></td><td>吸 4 → 屏 4 → 呼 4 → 屏 4</td><td class="stars">★★<span class="off">★</span></td>
+        <td>表现类有证据（警察模拟 N=96）<a class="cite" href="#r13">[13]</a>；生理 HRV 增益小（β=0.25）<a class="cite" href="#r3">[3]</a></td></tr>
+      <tr><td><b>生理性叹息</b></td><td>双鼻吸 + 长口呼，1-5 分钟</td><td class="stars">★★<span class="off">★</span></td>
+        <td>28 天实验中正性情绪提升最大 <a class="cite" href="#r2">[2]</a>；最快的急性减压招</td></tr>
+      <tr><td><b>观呼吸（数息）</b></td><td>不改节奏，只观察，数到 10 循环</td><td class="stars">★★</td>
+        <td>斯坦福实验中有改善，但幅度小于主动呼吸技法 <a class="cite" href="#r2">[2]</a></td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">B. 瑜伽调息（Pranayama）</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>技法</th><th>怎么做</th><th>证据</th><th>关键数字 / 注意</th></tr>
+      <tr><td><b>交替鼻孔 Nadi Shodhana</b></td><td>拇指压右鼻、左吸 4 → 屏 → 右鼻呼 4（可扩展 4-16-8）</td><td class="stars">★★</td>
+        <td>100 名高血压患者：一次 20 分钟降血压、改善交感-迷走平衡、反应时缩短 <a class="cite" href="#r15">[15]</a></td></tr>
+      <tr><td><b>蜂鸣 Bhramari</b></td><td>吸气后呼气时闭口发"嗡——"</td><td class="stars">★★</td>
+        <td>同研究中认知加工速度改善最大（p&lt;0.00001）<a class="cite" href="#r15">[15]</a></td></tr>
+      <tr><td><b>喉式 Ujjayi</b></td><td>喉部轻收，海浪声，全程可练</td><td class="stars">★</td><td>瑜伽流派默认呼吸，研究少</td></tr>
+      <tr><td><b>三段式 Dirga</b></td><td>腹 → 胸 → 锁骨依次充盈排空</td><td class="stars">★</td><td>教"找到横膈膜"的分解动作，教学价值高</td></tr>
+      <tr><td><b>清凉 Sitali / Sitkari</b></td><td>卷舌吸气（或齿间吸）→ 口呼</td><td class="stars">★</td><td>降温平躁，炎热/情绪过热场景</td></tr>
+      <tr><td><b>圣光调息 Kapalabhati</b></td><td>快节奏腹式弹呼，60-120 次/分，吸气被动</td><td class="stars">★</td>
+        <td>EEG 显示练习后 theta 增加、主观放松 <a class="cite" href="#r26">[26]</a>。<b>禁忌多</b>：高血压、心脏病、癫痫、孕期、眩晕史；有致气胸病例报告 <a class="cite" href="#r27">[27]</a></td></tr>
+      <tr><td><b>风箱 Bhastrika</b></td><td>比圣光更用力，吸呼皆主动</td><td class="stars">★</td><td>同上禁忌；唤醒/提神用</td></tr>
+      <tr><td><b>单鼻孔 Bhedana</b></td><td>右吸左呼（提神）/ 左吸右呼（镇静）</td><td class="stars">★</td><td>与交替鼻孔同源</td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">C. 运动表现（骑行 / 跑步）</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>技法</th><th>怎么做</th><th>证据</th><th>关键数字 / 注意</th></tr>
+      <tr><td><b>鳄鱼式呼吸</b></td><td>俯卧，手叠额下，把气"顶"向下背/侧腰，感受腹部轻推地面</td><td class="stars">★</td>
+        <td>膈肌意识训练，热身常客（你那张卡片的一号动作）；价值在"找到膈肌"而非节奏</td></tr>
+      <tr><td><b>90/90 呼吸</b></td><td>仰卧腿架 90/90 踩墙，吸气压肋、呼气压肋下沉</td><td class="stars">★</td><td>康复/力量圈的横膈膜-核心整合训练，与鳄鱼式同源</td></tr>
+      <tr><td><b>节奏呼吸（步频耦合）</b></td><td>吸 3 步 / 呼 2 步（比例因人而异）</td><td class="stars">★★</td>
+        <td>声引导把呼吸-步频耦合率从 26.3% 提到 69.9% <a class="cite" href="#r16">[16]</a></td></tr>
+      <tr><td><b>鼻腔呼吸</b></td><td>低强度全程鼻吸（或鼻吸口呼），强度升高再切</td><td class="stars">★★</td>
+        <td>抑制过度通气有效（RER&lt;1.0），但高心率下增加心血管负荷 <a class="cite" href="#r18">[18]</a>；12 名高水平车手口/鼻/混合模式做功无显著差异，口呼吸力竭时间略短但乳酸更低 <a class="cite" href="#r19">[19]</a>。定位：训练工具，非比赛武器</td></tr>
+      <tr><td><b>呼吸肌训练 IMT</b></td><td>阻力器械练吸气压负荷（需设备）</td><td class="stars">★★★</td>
+        <td>元分析 21 项研究：计时赛、力竭时间、Yo-Yo 表现均显著提升 <a class="cite" href="#r17">[17]</a>；App 教方法，替代不了器械</td></tr>
+      <tr><td><b>屏息 / CO2 耐受</b></td><td>静息逐步延长屏息（BOLT 自测起步）</td><td class="stars">★★</td>
+        <td><b>风险最高的一类</b>：禁止水中/驾驶/骑行中练习</td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">D. 急性减压与强节奏技法</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>技法</th><th>怎么做</th><th>证据</th><th>关键数字 / 注意</th></tr>
+      <tr><td><b>Wim Hof 呼吸法</b></td><td>30 次大幅鼻吸口呼 → 屏息（15 秒起）→ 深吸屏 15 秒，3-4 轮</td><td class="stars">★</td>
+        <td>15 天 RCT 无任何指标优势 <a class="cite" href="#r20">[20]</a>；抑郁 RCT 中与慢呼吸对照组<b>效果等同</b>（两组合均降抑郁 24%），仅反刍思维更优 <a class="cite" href="#r21">[21]</a>。<b>有溺水死亡案例，必须坐/躺着练</b></td></tr>
+      <tr><td><b>4-4-6 / 4-8 简化版</b></td><td>吸 4 → 屏 4 → 呼 6（或 8），无第二次屏息</td><td class="stars">★</td><td>方盒/4-7-8 的温和版，适合屏息不适者入门</td></tr>
+      <tr><td><b>呵欠 / 叹息策略</b></td><td>有意识地打哈欠或叹气 1-3 次</td><td class="stars">★</td><td>门槛最低的"重置"手段，工位场景</td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">E. 临床技法（只做科普，不作主打）</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>技法</th><th>怎么做</th><th>证据</th><th>关键数字 / 注意</th></tr>
+      <tr><td><b>缩唇呼吸</b></td><td>鼻吸 2 秒 → 缩唇缓呼 4 秒</td><td class="stars">★★★</td><td>COPD 康复标准配置；"喘"场景，遵医嘱</td></tr>
+      <tr><td><b>Buteyko 法</b></td><td>降低通气量、鼻呼吸、轻屏息，重建 CO2 耐受</td><td class="stars">★★</td><td>哮喘患者有减少急救药使用的报告，研究质量参差 <a class="cite" href="#r28">[28]</a></td></tr>
+      <tr><td><b>腹式呼吸训练（临床版）</b></td><td>生物反馈设备练到 4 次/分，20 节课 / 8 周</td><td class="stars">★★</td><td>负性情绪下降、皮质醇下降、持续注意力提升（N=40）<a class="cite" href="#r9">[9]</a></td></tr>
+    </table>
+  </div>
+
+  <!-- ══ 证据对照 ══ -->
+  <p class="lg-section-title">证据对照</p>
+  <h2 class="lg-h2" id="evidence">哪种呼吸，对什么有效</h2>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>想要的效果</th><th>首选技法</th><th>证据</th><th>关键数字</th></tr>
+      <tr><td>主观减压 / 焦虑 / 抑郁</td><td>任何有节拍的慢呼吸</td><td>12 项 RCT 元分析</td><td class="num">g=-0.35 / -0.32 / -0.40 <a class="cite" href="#r10">[10]</a></td></tr>
+      <tr><td>生理放松（HRV）</td><td>6 次/分共振呼吸</td><td>84 人四条件对照</td><td class="num">RMSSD β：0.65 / 0.45 vs 方盒 0.25、4-7-8 0.27 <a class="cite" href="#r3">[3]</a></td></tr>
+      <tr><td>降血压</td><td>6 次/分慢呼吸</td><td>高血压 RCT</td><td class="num">收缩压 -8.6 mmHg；压力感受器 +78% <a class="cite" href="#r8">[8]</a></td></tr>
+      <tr><td>助眠</td><td>睡前 6 次/分 15-20 分钟</td><td>30 天 RCT + 失眠研究</td><td class="num">PSQI d=0.51 <a class="cite" href="#r4">[4]</a>；入睡潜伏期缩短 <a class="cite" href="#r5">[5]</a></td></tr>
+      <tr><td>快速情绪急救</td><td>生理性叹息</td><td>108 人 28 天 RCT</td><td class="num">正性情绪 +1.89，五组最高 <a class="cite" href="#r2">[2]</a></td></tr>
+      <tr><td>高压下的表现</td><td>方盒呼吸</td><td>96 名警校生实战模拟</td><td>表现提升（自我压力感未变：腾出认知资源而非变轻松）<a class="cite" href="#r13">[13]</a></td></tr>
+      <tr><td>注意力 + 皮质醇</td><td>腹式呼吸长程训练</td><td>40 人 8 周</td><td class="num">皮质醇显著下降 <a class="cite" href="#r9">[9]</a></td></tr>
+      <tr><td>运动耐力</td><td>呼吸肌训练；节奏呼吸（声引导）</td><td>元分析 21 项；声引导研究</td><td class="num">耦合率 26.3% → 69.9% <a class="cite" href="#r16">[16]</a><a class="cite" href="#r17">[17]</a></td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">争议区：四个"打脸"发现（做成科普页会非常加分）</h3>
+  <div class="lg-grid" style="grid-template-columns:1fr">
+    <div class="lg-note info lg-glass lg-rect"><b>一、4-7-8 的生理证据远弱于名气。</b>唯一直接测 HRV 的研究里指标不升反降 <a class="cite" href="#r7">[7]</a>；对比研究中增益垫底 <a class="cite" href="#r3">[3]</a>。但它助眠口碑真实——产品上保留它，卖点写"助眠仪式"，不写"提升 HRV"。</div>
+    <div class="lg-note info lg-glass lg-rect"><b>二、"呼气必须长于吸气"没有强证据。</b>12 周 RCT（N=100）呼长 vs 等长无差别 <a class="cite" href="#r22">[22]</a>；6 次/分下 1:2 与 1:1 的 HRV 差异也不显著 <a class="cite" href="#r12">[12]</a>。真正起作用的是"慢"，不是"比例"。别让用户记复杂比例。</div>
+    <div class="lg-note info lg-glass lg-rect"><b>三、慢呼吸的"独特性"受到大样本质疑。</b>N=400：5.5 次/分 vs 12 次/分（安慰剂）四周后各指标改善完全一致 <a class="cite" href="#r11">[11]</a>。"跟节拍 + 每天专注 10 分钟"这个行为组合，可能贡献了大部分疗效——<b>节拍器是产品本体</b>。</div>
+    <div class="lg-note info lg-glass lg-rect"><b>四、Wim Hof 的生理增益未复现。</b>15 天 RCT 全指标不显著 <a class="cite" href="#r20">[20]</a>；抑郁 RCT 中与慢呼吸对照等效 <a class="cite" href="#r21">[21]</a>。可做"强节奏体验课"，宣称要克制。</div>
+  </div>
+
+  <!-- ══ App 建议 ══ -->
+  <p class="lg-section-title">产品化</p>
+  <h2 class="lg-h2" id="product">做成 App：动效映射与会话设计</h2>
+
+  <h3 class="lg-h3">5.1 呼吸技法 → 动效映射（核心设计表）</h3>
+  <p class="lg-lead dim">不同技法需要不同的几何形状——<b>形状本身就是节拍的说明书</b>。（上方 demo 已实现前四种）</p>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>技法</th><th>节奏</th><th>建议动效</th><th>理由</th></tr>
+      <tr><td>方盒 4-4-4-4</td><td>吸4-停4-呼4-停4</td><td><b>方形/菱形轨道</b>，光点沿边匀速，角上静止</td><td>形状即节奏，扫一眼就懂；屏息停在角落天然有"到此一游"感</td></tr>
+      <tr><td>4-7-8</td><td>吸4-停7-呼8</td><td><b>圆环呼吸球</b>：放大 → 光环收拢倒计时 → 缓慢缩小</td><td>7 秒屏息太久，方盒会让人"等得不耐烦"，圆+倒计时更柔和</td></tr>
+      <tr><td>共振呼吸 6 次/分</td><td>吸4.5-呼5.5，无停顿</td><td><b>连续波浪环</b>：无任何静止帧</td><td>共振要平滑连续，停顿会破坏节律</td></tr>
+      <tr><td>生理性叹息</td><td>双吸 + 长呼</td><td><b>双段扩张</b>：先扩一大步、再补一小步，然后长收</td><td>双吸是辨识点，动效必须体现"补吸"</td></tr>
+      <tr><td>鳄鱼式呼吸</td><td>慢吸、腹部顶地</td><td>仰卧人物示意 + <b>腹部指示带</b>，圆环只作辅助</td><td>重点是"找到膈肌感觉"，不是节奏</td></tr>
+      <tr><td>交替鼻孔呼吸</td><td>左吸-停-右呼…</td><td><b>左右两个半环交替亮起</b></td><td>左右交替是技法核心，动效直接映射</td></tr>
+      <tr><td>Wim Hof</td><td>30 次快呼吸 + 屏息</td><td>快速脉冲群 + <b>屏息安全倒计时环</b></td><td>强节奏需要强视觉；屏息倒计时必须显眼</td></tr>
+      <tr><td>节奏呼吸（跑步/骑行）</td><td>吸 3 步 / 呼 2 步</td><td>圆环转速与步频/踏频同步（传感器）</td><td>声引导能把耦合率翻近三倍 <a class="cite" href="#r16">[16]</a></td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">5.2 三个引导通道，优先级随场景变</h3>
+  <div class="lg-grid">
+    <div class="lg-card lg-glass lg-rect"><h3>🔊 声音</h3><p>跑步场景的第一通道：声引导让呼吸-步频耦合率从 26.3% → 69.9% <a class="cite" href="#r16">[16]</a>。音频包是有直接证据的价值点。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>📳 触觉</h3><p>闭眼/睡前/低视力场景第一通道。Breathwrk 与 Calm 都内置触觉引导（可调强度）<a class="cite" href="#r29">[29]</a>。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>👁 视觉</h3><p>默认通道。核心任务是"让用户知道现在处于哪个阶段、还剩几秒"——就是上面那张映射表。</p></div>
+  </div>
+
+  <h3 class="lg-h3">5.3 会话结构：三个时长档</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>档位</th><th>时长</th><th>内容</th><th>依据</th></tr>
+      <tr><td><b>急救档</b></td><td>1-2 分钟</td><td>生理性叹息 ×5</td><td>5 分钟/天的短剂量即有情绪收益 <a class="cite" href="#r2">[2]</a></td></tr>
+      <tr><td><b>日常档</b></td><td>5-10 分钟</td><td>方盒 / 4-7-8 / 共振任选</td><td>5 分钟是各研究最常见的单次剂量 <a class="cite" href="#r2">[2]</a><a class="cite" href="#r3">[3]</a></td></tr>
+      <tr><td><b>深度档</b></td><td>15-20 分钟</td><td>睡前慢呼吸（6 次/分）</td><td>连续 30 天才出现 PSQI 与夜间迷走活性改善 <a class="cite" href="#r4">[4]</a><a class="cite" href="#r5">[5]</a></td></tr>
+    </table>
+  </div>
+  <div class="lg-note good lg-glass lg-rect"><b>学习曲线：</b>实测依从率 6 次/分约 90%，方盒/4-7-8 仅约 74% <a class="cite" href="#r3">[3]</a>——节奏越复杂越难跟。新手第一课用均匀简单节奏，带屏息的技法作为进阶解锁。</div>
+
+  <h3 class="lg-h3">5.4 个性化：每个人"最舒服的慢"不一样</h3>
+  <p class="lg-lead">成人共振频率在 4.5-6.5 次/分之间个体化 <a class="cite" href="#r12">[12]</a><a class="cite" href="#r24">[24]</a>。
+    可做"找到你的共振频率"课程：从 6.5 逐步降到 4.5（每档 2 分钟），用摄像头 PPG 或手表取 HRV 最高点作为个人默认节拍；没有传感器的阶段默认 5.5 次/分。</p>
+
+  <h3 class="lg-h3">5.5 安全设计：屏息类必须做前置分诊</h3>
+  <div class="lg-note warn lg-glass lg-rect">
+    <b>首次使用屏息技法（Wim Hof、长屏方盒、CO2 耐受训练）前必弹筛查：</b>孕期、癫痫、心血管疾病、未控制高血压、眩晕史、惊恐障碍史——命中任一项，切换无屏息版本。<br><br>
+    <b>硬性提示：</b>禁止在水中、驾驶、骑行、站立不稳的环境练习（Wim Hof 法已有溺水死亡案例）；出现头晕、手麻、耳鸣立即停止。<br><br>
+    <b>医学技法边界：</b>缩唇呼吸、Buteyko 只做科普卡片 +"请遵医嘱"，不进娱乐化课程流。
+  </div>
+
+  <h3 class="lg-h3">5.6 竞品速览（2026-09）</h3>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>产品</th><th>技法覆盖</th><th>引导方式</th><th>特色</th></tr>
+      <tr><td><b>Breathwrk</b></td><td>最全，含间歇低氧训练</td><td>语音+音效+触觉可调</td><td>打卡/排行榜、肺活量测试、睡眠分类 <a class="cite" href="#r29">[29]</a></td></tr>
+      <tr><td><b>Calm</b></td><td>呼吸是冥想模块的一部分</td><td>动画+震动，速度/时长可调</td><td>品牌大、生态全 <a class="cite" href="#r29">[29]</a></td></tr>
+      <tr><td><b>潮汐 / Now冥想</b></td><td>呼吸 + 冥想 + 白噪音 + HRV 压力</td><td>动画引导</td><td>中文市场用户基础 <a class="cite" href="#r29">[29]</a></td></tr>
+      <tr><td colspan="4"><b>空白点：</b>中文市场缺一个"证据透明 + 运动场景深绑"的呼吸 App——骑行/跑步的节奏呼吸（踏频耦合）是明显空位，也正好接你的骑行内容背景。</td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">5.7 MVP 建议：先做这 6 课</h3>
+  <div class="lg-grid">
+    <div class="lg-card lg-glass lg-rect"><h3>1 · 生理性叹息</h3><p>1 分钟急救档，双段扩张动效</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>2 · 方盒呼吸</h3><p>方形轨道动效，专注/赛前场景</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>3 · 4-7-8</h3><p>圆环+倒计时，助眠场景，标"仪式型"</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>4 · 共振呼吸 5.5</h3><p>连续波浪环，默认放松课</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>5 · 鳄鱼式呼吸</h3><p>姿态引导，骑行热身（你那张卡片的一号动作）</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>6 · 骑行节奏呼吸</h3><p>吸 3 圈 / 呼 2 圈踏频，与码表同步</p></div>
+  </div>
+  <div class="lg-note info lg-glass lg-rect">留存课：<b>"30 天睡前挑战"</b>（6 次/分 × 15 分钟）——这是全部证据里效果最可测的长周期课程 <a class="cite" href="#r4">[4]</a>。</div>
+
+  <!-- ══ 缺口 ══ -->
+  <p class="lg-section-title">研究缺口</p>
+  <h2 class="lg-h2">还没答案的问题</h2>
+  <div class="lg-grid" style="grid-template-columns:1fr">
+    <div class="lg-card lg-glass lg-rect"><h3>长期效果缺大样本</h3><p>超过 3 个月的呼吸训练对 HRV 的影响几乎没有高质量数据，现有研究多在 2-8 周。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>屏息的价值是间接证据</h3><p>CO2 耐受与焦虑的关系有机制支持，但"练屏息能抗焦虑"缺直接 RCT。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>瑜伽调息没和慢呼吸拆开比过</h3><p>同等节拍下，交替鼻孔/蜂鸣是否优于普通慢呼吸？无法回答——所以别宣称"瑜伽调息更强"。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>引导形式的效果差异是研究空白</h3><p>"圆环动画 vs 音频 vs 纯计时器"没有头对头实验——这正是你可以自己做 A/B 的地方。</p></div>
+    <div class="lg-card lg-glass lg-rect"><h3>4-7-8 助眠的机制不明</h3><p>是 8 秒长呼气起效，还是"躺床上专心做一件事"的仪式效应？尚无研究区分。</p></div>
+  </div>
+
+  <!-- ══ 参考来源 ══ -->
+  <p class="lg-section-title">参考来源</p>
+  <h2 class="lg-h2" id="refs">29 条出处（全部可溯源）</h2>
+  <div class="lg-refs lg-glass">
+    <ol>
+      <li id="r1">Russo MA, Santarelli DM, O'Rourke D. <em>The physiological effects of slow breathing in the healthy human.</em> Breathe, 2017. <a href="https://doi.org/10.1183/20734735.009817">doi:10.1183/20734735.009817</a></li>
+      <li id="r2">Balban MY, et al. <em>Brief structured respiration practices enhance mood and reduce physiological arousal.</em> Cell Reports Medicine, 2023. <a href="https://doi.org/10.1016/j.xcrm.2022.100895">doi:10.1016/j.xcrm.2022.100895</a></li>
+      <li id="r3">Marchant J, Khazan I, Cressman M, Steffen PR. <em>Comparing the Effects of Square, 4–7-8, and 6 Breaths-per-Minute Breathing Conditions on HRV, CO2 Levels, and Mood.</em> Applied Psychophysiology and Biofeedback, 2025. <a href="https://doi.org/10.1007/s10484-025-09688-z">doi:10.1007/s10484-025-09688-z</a>（本报告最核心的一篇）</li>
+      <li id="r4">Laborde S, Hosang TJ, Mosley E, Dosseville FEM. <em>Influence of a 30-Day Slow-Paced Breathing Intervention Compared to Social Media Use on Subjective Sleep Quality and Cardiac Vagal Activity.</em> J Clin Med, 2019. <a href="https://doi.org/10.3390/jcm8020193">doi:10.3390/jcm8020193</a></li>
+      <li id="r5">Tsai HJ, Kuo TBJ, et al. <em>Efficacy of paced breathing for insomnia: enhances vagal activity and improves sleep quality.</em> Psychophysiology, 2014. <a href="https://doi.org/10.1111/psyp.12333">doi:10.1111/psyp.12333</a></li>
+      <li id="r6">Steffen PR, et al. <em>How to Breathe to Improve HRV: Low and Slow Breathing Improves HRV More than Deep Breathing Except When Using a Pacer.</em> Research Square 预印本, 2022. <a href="https://doi.org/10.21203/rs.3.rs-1394127/v1">doi:10.21203/rs.3.rs-1394127/v1</a></li>
+      <li id="r7">Vierra J, Boonla O, Prasertsri P. <em>Effects of sleep deprivation and 4-7-8 breathing control on HRV, blood pressure, blood glucose, and endothelial function in healthy young adults.</em> Physiological Reports, 2022. <a href="https://doi.org/10.14814/phy2.15389">doi:10.14814/phy2.15389</a></li>
+      <li id="r8">Joseph CN, et al. <em>Slow Breathing Improves Arterial Baroreflex Sensitivity and Decreases Blood Pressure in Essential Hypertension.</em> Hypertension, 2005. <a href="https://doi.org/10.1161/01.HYP.0000179581.68566.7d">doi:10.1161/01.HYP.0000179581.68566.7d</a></li>
+      <li id="r9">Ma X, et al. <em>The Effect of Diaphragmatic Breathing on Attention, Negative Affect and Stress in Healthy Adults.</em> Frontiers in Psychology, 2017. <a href="https://doi.org/10.3389/fpsyg.2017.00874">doi:10.3389/fpsyg.2017.00874</a></li>
+      <li id="r10">Fincham GW, Strauss C, Montero-Marin J, Cavanagh K. <em>Effect of breathwork on stress and mental health: A meta-analysis of randomised-controlled trials.</em> Scientific Reports, 2023. <a href="https://doi.org/10.1038/s41598-022-27247-y">doi:10.1038/s41598-022-27247-y</a></li>
+      <li id="r11">Fincham GW, Strauss C, Cavanagh K. <em>Effect of coherent breathing on mental health and wellbeing: a randomised placebo-controlled trial.</em> Scientific Reports, 2023. <a href="https://doi.org/10.1038/s41598-023-49279-8">doi:10.1038/s41598-023-49279-8</a>（400 人）</li>
+      <li id="r12">Meehan ZM, Shaffer F. <em>Do Longer Exhalations Increase HRV During Slow-Paced Breathing?</em> Applied Psychophysiology and Biofeedback, 2024. <a href="https://doi.org/10.1007/s10484-024-09637-2">doi:10.1007/s10484-024-09637-2</a></li>
+      <li id="r13">Sætrevik B, Granerud T, Nijhof M, Sandvik AM. <em>Tactical Breathing Enhances Police Performance in a Critical Incident Simulation.</em> Collabra: Psychology, 2025. <a href="https://doi.org/10.1525/collabra.144527">doi:10.1525/collabra.144527</a></li>
+      <li id="r14">Gerritsen RJS, Band GPH. <em>Breath of Life: The Respiratory Vagal Stimulation Model of Contemplative Activity.</em> Frontiers in Human Neuroscience, 2018. <a href="https://doi.org/10.3389/fnhum.2018.00397">doi:10.3389/fnhum.2018.00397</a></li>
+      <li id="r15">Upadhyay J, et al. <em>Effects of Nadishodhana and Bhramari Pranayama on heart rate variability, auditory reaction time, and blood pressure: A randomized clinical trial in hypertensive patients.</em> Journal of Ayurveda and Integrative Medicine, 2023. <a href="https://doi.org/10.1016/j.jaim.2023.100774">doi:10.1016/j.jaim.2023.100774</a></li>
+      <li id="r16">Harbour E, et al. <em>Step-adaptive sound guidance enhances locomotor-respiratory coupling in novice female runners: A proof-of-concept study.</em> Frontiers in Sports and Active Living, 2023. <a href="https://doi.org/10.3389/fspor.2023.1112663">doi:10.3389/fspor.2023.1112663</a></li>
+      <li id="r17">HajGhanbari B, et al. <em>Effects of Respiratory Muscle Training on Performance in Athletes: A Systematic Review With Meta-Analyses.</em> J Strength Cond Res, 2013. <a href="https://doi.org/10.1519/JSC.0b013e318269f73f">doi:10.1519/JSC.0b013e318269f73f</a></li>
+      <li id="r18"><em>Effects of Nasal or Oral Breathing on Anaerobic Power Output and Metabolic Responses during Short-term Maximal Exercise.</em> International Journal of Exercise Science, 2017（N=9）. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5466403/">PMC5466403</a></li>
+      <li id="r19">Bergqvist J, et al. <em>Effects of oral, oronasal, and oronasal breathing with a decongested nose during incremental maximal exercise testing of well-trained endurance athletes: a randomized cross-over study.</em> Frontiers in Physiology, 2025. <a href="https://doi.org/10.3389/fphys.2025.1654725">doi:10.3389/fphys.2025.1654725</a></li>
+      <li id="r20">Ketelhut S, et al. <em>The effectiveness of the Wim Hof method on cardiac autonomic function, blood pressure, arterial compliance, and different psychological parameters.</em> Scientific Reports, 2023. <a href="https://doi.org/10.1038/s41598-023-44902-0">doi:10.1038/s41598-023-44902-0</a></li>
+      <li id="r21">Blades R, et al. <em>A randomized controlled clinical trial of a Wim Hof Method intervention in women with high depressive symptoms.</em> Comprehensive Psychoneuroendocrinology, 2024. <a href="https://doi.org/10.1016/j.cpnec.2024.100272">doi:10.1016/j.cpnec.2024.100272</a></li>
+      <li id="r22">Birdee GS, et al. <em>Slow breathing for reducing stress: The effect of extending exhale.</em> Complementary Therapies in Medicine, 2023. <a href="https://doi.org/10.1016/j.ctim.2023.102937">doi:10.1016/j.ctim.2023.102937</a></li>
+      <li id="r23">Kuula L, et al. <em>The Effects of Presleep Slow Breathing and Music Listening on Polysomnographic Sleep Measures – a pilot trial.</em> Scientific Reports, 2020. <a href="https://doi.org/10.1038/s41598-020-64218-7">doi:10.1038/s41598-020-64218-7</a>（负面证据也收进来）</li>
+      <li id="r24">Lehrer PM, Gevirtz R. <em>Heart rate variability biofeedback: how and why does it work?</em> Frontiers in Psychology, 2014. <a href="https://doi.org/10.3389/fpsyg.2014.00756">doi:10.3389/fpsyg.2014.00756</a></li>
+      <li id="r25">Shaffer F, Ginsberg JP. <em>An Overview of Heart Rate Variability Metrics and Norms.</em> Frontiers in Public Health, 2017. <a href="https://doi.org/10.3389/fpubh.2017.00258">doi:10.3389/fpubh.2017.00258</a></li>
+      <li id="r26"><em>Kapalabhati — yogic cleansing exercise. II. EEG topography analysis.</em> 1991. <a href="https://pubmed.ncbi.nlm.nih.gov/1818698/">PubMed 1818698</a></li>
+      <li id="r27">Sivasubramanian S, et al. <em>Kapalabhati Pranayama: Breath of Fire or Cause of Pneumothorax?</em> CHEST, 2004. <a href="https://doi.org/10.1378/chest.125.5.1951">doi:10.1378/chest.125.5.1951</a></li>
+      <li id="r28"><em>The Buteyko breathing technique for asthma: A review.</em> Complementary Therapies in Medicine, 2005. <a href="https://doi.org/10.1016/j.ctim.2005.01.003">doi:10.1016/j.ctim.2005.01.003</a></li>
+      <li id="r29">产品与市场资料：<a href="https://www.breathwrk.com/">Breathwrk 官网</a>、<a href="https://support.calm.com/hc/en-us/articles/360000069973">Calm 呼吸练习设置文档</a>、<a href="https://tide.fm/">潮汐官网</a>、知乎《5 款国产冥想 App 全对比》（2026-07）</li>
+    </ol>
+  </div>
+
+  <div class="lg-footer">
+    素材起点：骑行进化论公众号《呼吸》系列 09/10《不骑车时，练这两个就够了》（鳄鱼式呼吸 + 方盒呼吸）——你提供的那张卡片。<br>
+    本页为阅读版，完整正本见同目录 <b>呼吸法DeepResearch.md</b>。生成于 2026-09-22。
+  </div>
+
+</main>
+
+<script>
+/* ── 主题切换 ── */
+const root = document.documentElement;
+document.getElementById('themeToggle').addEventListener('click', () => {
+  root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+});
+
+/* ── 指针追踪高光 ── */
+document.querySelectorAll('.lg-interactive').forEach(el => {
+  el.addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--lg-mx', ((e.clientX - r.left) / r.width) * 100 + '%');
+    el.style.setProperty('--lg-my', ((e.clientY - r.top) / r.height) * 100 + '%');
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   呼吸引导器引擎（Demo）
+   ─ 方形轨道：光点只在吸/呼时移动，屏息时停在角上——形状即节拍
+   ─ 圆  环：外环进度 = 周期时钟；中心球 = 呼吸体积（平滑连续）
+   支持 URL 直链：?demo=box|p478|coherent|sigh  &autostart=1
+   ══════════════════════════════════════════════════════════════════ */
+const TECHNIQUES = {
+  box: {
+    label: '方盒呼吸 4-4-4-4',
+    desc: '吸 4 秒 → 屏 4 秒 → 呼 4 秒 → 屏 4 秒。光点只在吸/呼时沿方形轨道移动、屏息时停在角上，一圈 = 一个循环。适合专注、赛前/考前的"稳定仪式"。',
+    shape: 'square', cycles: 5,
+    phases: [
+      { label: '吸气', sec: 4, from: 1.00, to: 1.62 },
+      { label: '屏息', sec: 4, from: 1.62, to: 1.62 },
+      { label: '呼气', sec: 4, from: 1.62, to: 1.00 },
+      { label: '屏息', sec: 4, from: 1.00, to: 1.00 }
+    ],
+    pathMap: [
+      { from: 0.0, to: 0.5 },
+      { from: 0.5, to: 0.5 },
+      { from: 0.5, to: 1.0 },
+      { from: 1.0, to: 1.0 }
+    ]
+  },
+  p478: {
+    label: '4-7-8 呼吸',
+    desc: '鼻吸 4 秒 → 屏息 7 秒 → 口呼 8 秒。圆环放大/收拢配合倒计时——7 秒屏息用圆形呈现比方形更柔和。定位：助眠仪式（生理证据弱，主观口碑强）。',
+    shape: 'circle', cycles: 4,
+    phases: [
+      { label: '吸气', sec: 4, from: 1.00, to: 1.62 },
+      { label: '屏息', sec: 7, from: 1.62, to: 1.62 },
+      { label: '呼气', sec: 8, from: 1.62, to: 1.00 }
+    ]
+  },
+  coherent: {
+    label: '共振呼吸 6 次/分',
+    desc: '吸 4.5 秒 → 呼 5.5 秒，不停顿、全程平滑连续。这是证据最强的一节课：HRV 增幅最大，也是血压与压力感受器改善的直接来源。',
+    shape: 'circle', cycles: 6,
+    phases: [
+      { label: '吸气', sec: 4.5, from: 1.00, to: 1.55 },
+      { label: '呼气', sec: 5.5, from: 1.55, to: 1.00 }
+    ]
+  },
+  sigh: {
+    label: '生理性叹息',
+    desc: '两次鼻吸（一长一短"补吸"）→ 长长地口呼。双段扩张动效体现"补吸"特征。1-2 分钟即可，最快的急性减压招。',
+    shape: 'circle', cycles: 5,
+    phases: [
+      { label: '长吸', sec: 3, from: 1.00, to: 1.38 },
+      { label: '补吸', sec: 1.5, from: 1.38, to: 1.62 },
+      { label: '长呼', sec: 6, from: 1.62, to: 1.00 }
+    ]
+  }
+};
+
+const PHASE_COLORS = {
+  '吸气': 'var(--br-inhale)', '长吸': 'var(--br-inhale)', '补吸': 'var(--br-hold)',
+  '屏息': 'var(--br-hold)', '呼气': 'var(--br-exhale)', '长呼': 'var(--br-exhale)'
+};
+
+const el = {
+  seg: document.getElementById('demoSeg'),
+  ind: document.getElementById('demoInd'),
+  toggle: document.getElementById('demoToggle'),
+  reset: document.getElementById('demoReset'),
+  track: document.getElementById('track'),
+  ringProgress: document.getElementById('ringProgress'),
+  squareTrack: document.getElementById('squareTrack'),
+  squareProgress: document.getElementById('squareProgress'),
+  sqDot: document.getElementById('sqDot'),
+  ball: document.getElementById('ball'),
+  countText: document.getElementById('countText'),
+  phaseLabel: document.getElementById('phaseLabel'),
+  phaseDot: document.getElementById('phaseDot'),
+  demoCount: document.getElementById('demoCount'),
+  demoChips: document.getElementById('demoChips'),
+  demoDesc: document.getElementById('demoDesc')
+};
+
+/* ── 方形轨道几何：起点 = 上边左端（左上圆角之后），顺时针 ── */
+const SQ = { x: 36, y: 36, w: 248, h: 248, r: 42 };
+const SQ_SEGS = (() => {
+  const sw = SQ.w - 2 * SQ.r, sh = SQ.h - 2 * SQ.r;
+  const arc = Math.PI * SQ.r / 2;                       /* 四分之一圆角 */
+  const rad = d => d / SQ.r;                            /* 弧长 → 弧度 */
+  return [
+    { len: sw,  at: d => ({ x: SQ.x + SQ.r + d, y: SQ.y }) },                                              /* 上边 → */
+    { len: arc, at: d => ({ x: SQ.x + SQ.w - SQ.r + SQ.r * Math.cos(-Math.PI / 2 + rad(d)),
+                            y: SQ.y + SQ.r + SQ.r * Math.sin(-Math.PI / 2 + rad(d)) }) },                  /* 右上角 */
+    { len: sh,  at: d => ({ x: SQ.x + SQ.w, y: SQ.y + SQ.r + d }) },                                       /* 右边 ↓ */
+    { len: arc, at: d => ({ x: SQ.x + SQ.w - SQ.r + SQ.r * Math.cos(rad(d)),
+                            y: SQ.y + SQ.h - SQ.r + SQ.r * Math.sin(rad(d)) }) },                          /* 右下角 */
+    { len: sw,  at: d => ({ x: SQ.x + SQ.w - SQ.r - d, y: SQ.y + SQ.h }) },                                /* 下边 ← */
+    { len: arc, at: d => ({ x: SQ.x + SQ.r + SQ.r * Math.cos(Math.PI / 2 + rad(d)),
+                            y: SQ.y + SQ.h - SQ.r + SQ.r * Math.sin(Math.PI / 2 + rad(d)) }) },            /* 左下角 */
+    { len: sh,  at: d => ({ x: SQ.x, y: SQ.y + SQ.h - SQ.r - d }) },                                       /* 左边 ↑ */
+    { len: arc, at: d => ({ x: SQ.x + SQ.r + SQ.r * Math.cos(Math.PI + rad(d)),
+                            y: SQ.y + SQ.r + SQ.r * Math.sin(Math.PI + rad(d)) }) }                        /* 左上角 */
+  ];
+})();
+const SQ_LEN = SQ_SEGS.reduce((s, g) => s + g.len, 0);
+
+function squarePointAt(frac) {
+  let d = Math.max(0, Math.min(1, frac)) * SQ_LEN;
+  for (const g of SQ_SEGS) { if (d <= g.len) return g.at(d); d -= g.len; }
+  return SQ_SEGS[0].at(0);
+}
+
+const CIRC = 2 * Math.PI * 128;                          /* 圆周长 ≈ 804.25 */
+
+let currentKey = 'box';
+let mode = 'idle';                                       /* idle | running | paused | done */
+let phaseIdx = 0, cycle = 0;
+let phaseStart = 0, pausedElapsed = null, rafId = 0;
+
+const tech = () => TECHNIQUES[currentKey];
+const cycleSec = () => tech().phases.reduce((s, p) => s + p.sec, 0);
+const smooth = t => t * t * (3 - 2 * t);
+
+function ballScale(v) {
+  el.ball.setAttribute('transform',
+    'translate(160 160) scale(' + v.toFixed(3) + ') translate(-160 -160)');
+}
+
+function setPath(frac) {
+  if (tech().shape === 'square') {
+    el.squareProgress.setAttribute('stroke-dasharray',
+      (SQ_LEN * frac).toFixed(1) + ' ' + (SQ_LEN * 2).toFixed(1));
+    const p = squarePointAt(frac);
+    el.sqDot.setAttribute('cx', p.x.toFixed(1));
+    el.sqDot.setAttribute('cy', p.y.toFixed(1));
+  } else {
+    el.ringProgress.setAttribute('stroke-dashoffset', (CIRC * (1 - frac)).toFixed(1));
+  }
+}
+
+function setupShape() {
+  const isSq = tech().shape === 'square';
+  el.track.style.display = isSq ? 'none' : '';
+  el.ringProgress.style.display = isSq ? 'none' : '';
+  el.squareTrack.style.display = isSq ? '' : 'none';
+  el.squareProgress.style.display = isSq ? '' : 'none';
+  el.sqDot.style.opacity = isSq ? '1' : '0';
+}
+
+function renderChips() {
+  el.demoChips.innerHTML = '';
+  const hot = (mode === 'running' || mode === 'paused');
+  tech().phases.forEach((p, i) => {
+    const c = document.createElement('span');
+    c.className = 'chip' + (i === phaseIdx && hot ? ' on' : '');
+    c.textContent = p.label + ' ' + p.sec + '″';
+    el.demoChips.appendChild(c);
+  });
+}
+
+function renderIdle() {
+  const t = tech();
+  el.demoDesc.textContent = t.desc;
+  el.demoCount.textContent = '循环 0/' + t.cycles + ' · 一次循环 ' + cycleSec() + ' 秒';
+  el.phaseLabel.textContent = '准备开始';
+  el.phaseDot.style.background = 'var(--br-idle)';
+  el.countText.textContent = t.phases[0].sec;
+  ballScale(1);
+  setPath(0);
+  renderChips();
+}
+
+function tick(now) {
+  const t = tech();
+  const p = t.phases[phaseIdx];
+  const elapsed = (now - phaseStart) / 1000;
+  const prog = Math.min(1, Math.max(0, elapsed / p.sec));
+
+  /* 呼吸球缩放（smoothstep 曲线） */
+  ballScale(p.from + (p.to - p.from) * smooth(prog));
+
+  /* 路径进度：方形 = 呼吸位置（屏息时静止）；圆形 = 周期时钟 */
+  if (t.shape === 'square') {
+    const m = t.pathMap[phaseIdx];
+    setPath(m.from + (m.to - m.from) * prog);
+  } else {
+    let done = 0;
+    for (let i = 0; i < phaseIdx; i++) done += t.phases[i].sec;
+    setPath((done + Math.min(elapsed, p.sec)) / cycleSec());
+  }
+
+  /* 倒计时与阶段标签 */
+  const remain = Math.max(0, p.sec - elapsed);
+  el.countText.textContent = remain >= 10 ? Math.ceil(remain) : remain.toFixed(1);
+  el.phaseLabel.textContent = p.label;
+  el.phaseDot.style.background = PHASE_COLORS[p.label] || 'var(--br-idle)';
+
+  /* 阶段推进 */
+  if (elapsed >= p.sec) {
+    if (navigator.vibrate) { try { navigator.vibrate(18); } catch (e) { } }
+    phaseStart = now;
+    phaseIdx++;
+    if (phaseIdx >= t.phases.length) {
+      phaseIdx = 0;
+      cycle++;
+      if (cycle >= t.cycles) { finish(); return; }
+      el.demoCount.textContent = '循环 ' + cycle + '/' + t.cycles + ' · 一次循环 ' + cycleSec() + ' 秒';
+    }
+    renderChips();
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function start() {
+  if (mode === 'done') reset();
+  mode = 'running';
+  el.toggle.textContent = '暂停';
+  if (pausedElapsed !== null) {
+    phaseStart = performance.now() - pausedElapsed;
+    pausedElapsed = null;
+  } else if (!phaseStart) {
+    phaseStart = performance.now();
+  }
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(tick);
+}
+
+function pause() {
+  mode = 'paused';
+  el.toggle.textContent = '继续';
+  cancelAnimationFrame(rafId);
+  pausedElapsed = performance.now() - phaseStart;
+  el.phaseLabel.textContent = '已暂停';
+}
+
+function finish() {
+  mode = 'done';
+  cancelAnimationFrame(rafId);
+  const t = tech();
+  el.toggle.textContent = '再来一组';
+  el.phaseLabel.textContent = '完成 ✓';
+  el.phaseDot.style.background = 'var(--br-exhale)';
+  el.countText.textContent = '✓';
+  ballScale(1);
+  el.demoCount.textContent = '完成 ' + t.cycles + ' 个循环 · 共 ' + (t.cycles * cycleSec()) + ' 秒';
+  phaseIdx = 0; phaseStart = 0; pausedElapsed = null;
+  renderChips();
+}
+
+function reset() {
+  cancelAnimationFrame(rafId);
+  mode = 'idle';
+  phaseIdx = 0; cycle = 0; phaseStart = 0; pausedElapsed = null;
+  el.toggle.textContent = '开始';
+  setupShape();
+  renderIdle();
+}
+
+el.toggle.addEventListener('click', () => {
+  if (mode === 'running') pause();
+  else start();
+});
+el.reset.addEventListener('click', () => reset());
+
+el.seg.querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    el.seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', 'false'));
+    btn.setAttribute('aria-selected', 'true');
+    moveIndicator(btn);
+    currentKey = btn.dataset.key;
+    reset();
+  });
+});
+
+function moveIndicator(btn) {
+  el.ind.style.width = btn.offsetWidth + 'px';
+  el.ind.style.transform = 'translateX(' + (btn.offsetLeft - 4) + 'px)';
+}
+
+/* ── URL 直链：?demo=coherent&autostart=1 ── */
+try {
+  const qs = new URLSearchParams(location.search);
+  const dk = qs.get('demo');
+  if (dk && TECHNIQUES[dk]) {
+    currentKey = dk;
+    el.seg.querySelectorAll('button').forEach(b => {
+      b.setAttribute('aria-selected', String(b.dataset.key === dk));
+    });
+  }
+  if (qs.get('autostart')) setTimeout(() => { start(); }, 400);
+} catch (e) { }
+
+/* ── 初始化 ── */
+requestAnimationFrame(() => {
+  const active = el.seg.querySelector('button[aria-selected="true"]');
+  if (active) moveIndicator(active);
+  reset();
+});
+window.addEventListener('resize', () => {
+  const active = el.seg.querySelector('button[aria-selected="true"]');
+  if (active) moveIndicator(active);
+});
+</script>
+</body>
+</html>

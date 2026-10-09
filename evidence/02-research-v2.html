@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>呼吸法调研 · 第二版：市面全景与 2024–2026 最新证据</title>
+<style>
+:root {
+  --lg-blur: 24px; --lg-saturate: 180%; --lg-brightness: 1.08;
+  --lg-glass-bg: rgba(255,255,255,0.12); --lg-edge: rgba(255,255,255,0.22);
+  --lg-spec: rgba(255,255,255,0.45); --lg-drop: rgba(0,0,0,0.16);
+  --lg-radius-capsule: 9999px; --lg-radius-card: 22px; --lg-gutter: 20px;
+  --lg-fg: rgba(22,22,28,0.92); --lg-fg-2: rgba(22,22,28,0.60);
+  --lg-accent: #0a84ff; --lg-spring: cubic-bezier(0.34,1.56,0.64,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --lg-brightness:0.85; --lg-glass-bg: rgba(28,28,32,0.45); --lg-edge: rgba(255,255,255,0.14);
+    --lg-spec: rgba(255,255,255,0.28); --lg-drop: rgba(0,0,0,0.42);
+    --lg-fg: rgba(245,245,250,0.95); --lg-fg-2: rgba(245,245,250,0.62); }
+}
+html[data-theme="dark"] { --lg-brightness:0.85; --lg-glass-bg: rgba(28,28,32,0.45); --lg-edge: rgba(255,255,255,0.14);
+  --lg-spec: rgba(255,255,255,0.28); --lg-drop: rgba(0,0,0,0.42);
+  --lg-fg: rgba(245,245,250,0.95); --lg-fg-2: rgba(245,245,250,0.62); }
+html[data-theme="light"] { --lg-brightness:1.08; --lg-glass-bg: rgba(255,255,255,0.12); --lg-edge: rgba(255,255,255,0.22);
+  --lg-spec: rgba(255,255,255,0.45); --lg-drop: rgba(0,0,0,0.16);
+  --lg-fg: rgba(22,22,28,0.92); --lg-fg-2: rgba(22,22,28,0.60); }
+* { box-sizing: border-box; }
+body { margin:0; min-height:100vh; font-family:-apple-system,"SF Pro Text","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--lg-fg); -webkit-font-smoothing:antialiased; background:#eef1f7; }
+@media (prefers-color-scheme: dark){ body{ background:#0f1320; } }
+html[data-theme="dark"] body{ background:#0f1320; }
+html[data-theme="light"] body{ background:#eef1f7; }
+
+.lg-backdrop { position:fixed; inset:0; z-index:-1; overflow:hidden; background:linear-gradient(180deg,#e8ecf7 0%,#f4eee8 100%); }
+@media (prefers-color-scheme: dark){ .lg-backdrop{ background:linear-gradient(180deg,#0d1220 0%,#1a1520 100%); } }
+html[data-theme="dark"] .lg-backdrop{ background:linear-gradient(180deg,#0d1220 0%,#1a1520 100%); }
+html[data-theme="light"] .lg-backdrop{ background:linear-gradient(180deg,#e8ecf7 0%,#f4eee8 100%); }
+.lg-blob { position:absolute; border-radius:50%; opacity:.85; animation:lg-drift 26s ease-in-out infinite alternate; }
+html[data-theme="dark"] .lg-blob{ opacity:.6; }
+.blob-1{ width:720px;height:720px;top:-240px;left:-180px;background:radial-gradient(circle,rgba(64,132,255,.85) 0%,rgba(64,132,255,.35) 42%,rgba(64,132,255,0) 70%); }
+.blob-2{ width:680px;height:680px;top:16%;right:-240px;background:radial-gradient(circle,rgba(255,138,64,.8) 0%,rgba(255,138,64,.32) 42%,rgba(255,138,64,0) 70%);animation-delay:-8s; }
+.blob-3{ width:640px;height:640px;top:52%;left:-120px;background:radial-gradient(circle,rgba(178,110,255,.75) 0%,rgba(178,110,255,.3) 42%,rgba(178,110,255,0) 70%);animation-delay:-16s; }
+.blob-4{ width:560px;height:560px;bottom:-200px;right:4%;background:radial-gradient(circle,rgba(48,209,170,.65) 0%,rgba(48,209,170,.26) 42%,rgba(48,209,170,0) 70%);animation-delay:-20s; }
+@keyframes lg-drift { from{transform:translate3d(0,0,0) scale(1);} to{transform:translate3d(70px,50px,0) scale(1.15);} }
+
+.lg-glass { position:relative; isolation:isolate; border-radius:var(--lg-radius-capsule);
+  background-color:var(--lg-glass-bg); background-image:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0));
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  box-shadow: inset 0 0 0 1px var(--lg-edge), inset 0 6px 12px -6px var(--lg-spec), 0 8px 24px var(--lg-drop); }
+.lg-rect{ border-radius:var(--lg-radius-card); }
+.lg-refract::before{ content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:radial-gradient(120% 60% at 50% -20%, rgba(255,255,255,.40), transparent 55%); mix-blend-mode:screen; opacity:.8; z-index:-1; }
+.lg-toolbar { position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:10px; padding:10px var(--lg-gutter);
+  border-radius:0; box-shadow: inset 0 -1px 0 var(--lg-edge), 0 6px 24px rgba(0,0,0,.08); }
+.lg-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 16px; border:0;
+  border-radius:var(--lg-radius-capsule); background:none; font:600 15px/1.2 -apple-system,"PingFang SC",system-ui,sans-serif;
+  color:var(--lg-fg); cursor:pointer; }
+.lg-btn:hover{ background:rgba(255,255,255,.10); }
+@media (max-width:640px){ .lg-glass{ --lg-blur:16px; --lg-saturate:160%; } }
+@media (prefers-reduced-motion: reduce){ .lg-blob{ animation:none; } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .lg-glass{ background-color: rgba(22,22,26,.88); } }
+
+.lg-page { max-width:1000px; margin:0 auto; padding:0 var(--lg-gutter) 120px; }
+.lg-hero { padding:56px 0 8px; }
+.lg-hero h1 { font-size:clamp(27px,4.4vw,38px); margin:0 0 14px; letter-spacing:-0.02em; line-height:1.22; }
+.lg-hero .sub { font-size:16px; line-height:1.65; color:var(--lg-fg-2); max-width:42em; margin:0 0 8px; }
+.lg-kicker { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; font-size:12.5px; font-weight:650; letter-spacing:.06em; color:var(--lg-fg-2); margin-bottom:18px; }
+.lg-section-title { margin:64px 0 6px; font-size:13px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--lg-fg-2); }
+h2.lg-h2 { margin:8px 0 14px; font-size:clamp(22px,3vw,28px); letter-spacing:-0.01em; line-height:1.3; }
+h3.lg-h3 { font-size:17px; margin:28px 0 8px; letter-spacing:-0.01em; }
+.lg-lead { font-size:15.5px; line-height:1.75; color:var(--lg-fg); margin:0 0 14px; max-width:46em; }
+.lg-lead.dim { color:var(--lg-fg-2); }
+.lg-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:16px; }
+.lg-card { padding:18px; border-radius:var(--lg-radius-card); color:var(--lg-fg); }
+.lg-card h3 { margin:0 0 6px; font-size:15.5px; font-weight:650; }
+.lg-card p { margin:0; font-size:13px; line-height:1.55; color:var(--lg-fg-2); }
+.lg-table-wrap { margin-top:16px; padding:6px 10px; border-radius:var(--lg-radius-card); overflow-x:auto; }
+table.lg-table { border-collapse:collapse; width:100%; font-size:13.5px; min-width:640px; }
+.lg-table th { text-align:left; padding:11px 10px; color:var(--lg-fg-2); font-weight:650; font-size:12.5px; letter-spacing:.03em; border-bottom:1px solid rgba(127,127,140,.28); white-space:nowrap; }
+.lg-table td { padding:11px 10px; border-bottom:1px solid rgba(127,127,140,.14); vertical-align:top; line-height:1.55; }
+.lg-table tr:last-child td { border-bottom:0; }
+.lg-table td b { font-weight:650; }
+.lg-note { padding:16px 18px; border-radius:var(--lg-radius-card); margin-top:16px; font-size:14px; line-height:1.7; }
+.lg-note b { font-weight:680; }
+.lg-note.warn { border-left:3px solid #ff453a; }
+.lg-note.good { border-left:3px solid #30d158; }
+.lg-note.info { border-left:3px solid var(--lg-accent); }
+
+/* 论文卡 */
+.paper { padding:18px; border-radius:var(--lg-radius-card); margin-bottom:14px; }
+.paper-top { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
+.paper-journal { font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--lg-accent); text-transform:uppercase; }
+.paper-badge { font-size:11px; font-weight:650; padding:2px 9px; border-radius:999px; background:rgba(127,127,140,.18); color:var(--lg-fg-2); }
+.paper h3 { margin:0 0 8px; font-size:16px; font-weight:680; letter-spacing:-.01em; line-height:1.4; }
+.paper p { margin:0 0 10px; font-size:13.5px; line-height:1.65; color:var(--lg-fg-2); }
+.paper-kpi { font-size:13px; line-height:1.6; padding:10px 12px; border-radius:14px; background:rgba(10,132,255,.10); color:var(--lg-fg); font-variant-numeric:tabular-nums; }
+html[data-theme="dark"] .paper-kpi{ background:rgba(10,132,255,.16); }
+.paper-take { margin-top:10px; font-size:13px; line-height:1.6; color:var(--lg-fg); }
+.paper-take b { color:var(--lg-accent); }
+
+/* 梯队卡 */
+.tier { padding:18px; border-radius:var(--lg-radius-card); }
+.tier .t-num { font-size:11.5px; font-weight:700; letter-spacing:.06em; color:var(--lg-fg-2); text-transform:uppercase; }
+.tier h3 { margin:4px 0 10px; font-size:16px; font-weight:680; }
+.tier .tags { display:flex; flex-wrap:wrap; gap:7px; }
+.tag { font-size:12.5px; padding:5px 11px; border-radius:999px; background:rgba(127,127,140,.16); }
+.tag.hot { background:rgba(255,149,0,.20); }
+.tag.new { background:rgba(191,90,242,.20); }
+
+.lg-footer { margin-top:56px; padding-top:18px; border-top:1px solid rgba(127,127,140,.2); font-size:12.5px; color:var(--lg-fg-2); line-height:1.7; }
+.lg-refs { margin-top:16px; padding:20px 22px; border-radius:var(--lg-radius-card); }
+.lg-refs ol { margin:0; padding-left:22px; }
+.lg-refs li { font-size:13px; line-height:1.7; margin-bottom:9px; color:var(--lg-fg-2); }
+.lg-refs a { color:var(--lg-accent); text-decoration:none; word-break:break-all; }
+.lg-refs a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+
+<div class="lg-backdrop" aria-hidden="true">
+  <div class="lg-blob blob-1"></div><div class="lg-blob blob-2"></div>
+  <div class="lg-blob blob-3"></div><div class="lg-blob blob-4"></div>
+</div>
+
+<header class="lg-toolbar lg-glass">
+  <strong style="font-size:15px">呼吸法调研 · 第二版</strong>
+  <span style="flex:1"></span>
+  <button class="lg-btn" id="themeToggle" title="切换深浅色">🌗</button>
+</header>
+
+<main class="lg-page">
+
+  <section class="lg-hero">
+    <span class="lg-kicker lg-glass lg-rect">2026-09-23 · 市面全景 + 2024–2026 最新论文</span>
+    <h1>呼吸法调研 · 第二版：<br>市面上有哪些，最新论文说明了什么</h1>
+    <p class="sub">第一版建立了技法清单与经典证据；这一版补两件事——<strong>市面全景扫描</strong>（谁在用、用什么、市场怎么分层）
+      与 <strong>2024–2026 最新文献</strong>（运动 × 呼吸、放松 × 呼吸两个方向），并逐条对照新证据对旧结论的加强或修正。</p>
+  </section>
+
+  <!-- ========== 市场 ========== -->
+  <p class="lg-section-title">市面全景</p>
+  <h2 class="lg-h2">呼吸法已经分化成四条战线</h2>
+
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>产品</th><th>定位</th><th>核心技法</th><th>关键事实</th></tr>
+      <tr><td><b>Breathwrk</b></td><td>纯呼吸 App 头部</td><td>全谱系（含间歇低氧、屏息）</td><td><b>2025 年 10 月被 Peloton 收购</b>、会员免费——健身巨头把呼吸当成了自己的模块</td></tr>
+      <tr><td><b>FivePointFive</b></td><td><b>运动员专用</b></td><td>以 5.5 次/分共振呼吸为核心</td><td>名字就是 5.5 次/分；口号是"大多数运动员的呼吸方式是错的"——共振呼吸已有人做成运动垂直产品</td></tr>
+      <tr><td><b>Othership</b></td><td>音乐驱动沉浸式</td><td>热/冷身序列、情绪调节</td><td>从纽约线下场馆起家，卖的是"音乐 + 引导"的情绪体验</td></tr>
+      <tr><td><b>Vayu</b></td><td>硬件联动</td><td>箱式 / 4-7-8 / 叹息 / Wim Hof / 交替鼻孔 / Ujjayi / 共振</td><td>读完 <b>Apple Watch 的 HRV</b> 再给反馈——把"练完有没有效"变成数字</td></tr>
+      <tr><td><b>Calm / Headspace</b></td><td>通用冥想平台</td><td>呼吸只是子模块</td><td>Headspace $69.99/年量级；呼吸不是主角</td></tr>
+      <tr><td><b>Wim Hof Method</b></td><td>单一技法品牌</td><td>快呼吸 + 屏息 + 冷暴露</td><td>$20/年，靠个人 IP 与"耐寒"叙事</td></tr>
+      <tr><td><b>Oura / Garmin / Apple 正念</b></td><td>硬件自带</td><td>简单引导</td><td>免费或随硬件；主打"睡眠 + 压力分"</td></tr>
+      <tr><td><b>iBreathe / Open / Unwind / Coherence / Float</b></td><td>长尾</td><td>多为单一技法专精</td><td>印证长尾需求：<b>"只做一个呼吸法"也能有用户</b></td></tr>
+    </table>
+  </div>
+
+  <h3 class="lg-h3">市面在用的技法：分三层</h3>
+  <div class="lg-grid">
+    <div class="tier lg-glass lg-rect">
+      <div class="t-num">第一梯队 · 大众爆款</div>
+      <h3>谁都在讲的五个</h3>
+      <div class="tags">
+        <span class="tag hot">4-7-8</span><span class="tag hot">箱式 / 方盒 4-4-4-4</span>
+        <span class="tag hot">腹式呼吸</span><span class="tag hot">生理性叹息</span><span class="tag hot">慢呼吸 / 共振 5.5-6</span>
+      </div>
+      <p style="margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--lg-fg-2)">从 TikTok 爆款到播客带火，构成了大众认知的全部。</p>
+    </div>
+    <div class="tier lg-glass lg-rect">
+      <div class="t-num">第二梯队 · 圈层热</div>
+      <h3>运动与健康圈的硬通货</h3>
+      <div class="tags">
+        <span class="tag">鼻腔呼吸 / BOLT</span><span class="tag">CO₂ 耐受 / 屏息表</span><span class="tag">Wim Hof 法</span>
+        <span class="tag">Buteyko</span><span class="tag">交替鼻孔 / 蜂鸣 / Ujjayi</span><span class="tag">火呼吸 / Bhastrika</span>
+        <span class="tag">90/90 · 鳄鱼式</span>
+      </div>
+      <p style="margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--lg-fg-2)">瑜伽调息与运动呼吸两条传统在这里交汇。</p>
+    </div>
+    <div class="tier lg-glass lg-rect">
+      <div class="t-num">2025–2026 新趋势</div>
+      <h3>正在冒头的四个</h3>
+      <div class="tags">
+        <span class="tag new">9D / 躯体呼吸</span><span class="tag new">Connected / 全息呼吸</span>
+        <span class="tag new">呼吸 + 硬件闭环</span><span class="tag new">呼吸 + 冷热暴露</span>
+      </div>
+      <p style="margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--lg-fg-2)">体验强、证据少——要盯着，但别当科学卖。</p>
+    </div>
+  </div>
+
+  <div class="lg-note info lg-glass lg-rect">
+    <b>市场结构洞察：</b>欧美已经分成三层——① 通用身心健康平台（呼吸是子模块）、② <b>纯呼吸工具</b>（Breathwrk、FivePointFive 等，能独立生存甚至被巨头收购）、③ 硬件/场馆绑定（Oura、Othership）。<br>
+    <b>中国市场：</b>第一层有（潮汐、Now冥想，呼吸是子模块）；第三层刚起步（手环压力监测）；<b>第二层——纯呼吸工具、且与运动场景绑定——是空的</b>。4-7-8 之所以能在中文互联网反复爆火，本质上是因为没有更好的替代品。
+  </div>
+
+  <!-- ========== 运动方向 ========== -->
+  <p class="lg-section-title">最新论文 · 运动方向</p>
+  <h2 class="lg-h2">2024–2026：运动 × 呼吸的五条新证据</h2>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Med Sci Sports Exerc · 2026</span><span class="paper-badge">N=62 · RCT</span></div>
+    <h3>运动后恢复：方盒与循环叹息都加速副交感"重启"</h3>
+    <p>62 名军校学员随机分三组（方盒 / 循环叹息 / 自然呼吸），先做力竭运动测 VO₂max，再比恢复期高频 HRV（HF-HRV）与心率恢复（HRR）。</p>
+    <div class="paper-kpi">HF-HRV 组间差异显著（F(2,59)=8.20, p&lt;0.001, η²=0.22）；恢复 1-3 分钟 → 4-6 分钟，<b>两个呼吸组的上升幅度都显著大于自然呼吸（p=0.001）</b>；HRR 三组无差异</div>
+    <div class="paper-take"><b>含义：</b>呼吸法加速的是"副交感再激活"而非心率降得更快——这是"骑后 5 分钟恢复课"的直接证据，论文自称"field-ready"（随时能用）。</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Front Cardiovasc Med · 2026</span><span class="paper-badge">系统综述</span></div>
+    <h3>呼吸肌训练（IMT）与心脏自主神经功能</h3>
+    <p>把 2013 年"IMT 提升运动表现"的元分析延伸到自主神经层面：健康成人做 IMT 后的急性与慢性自主神经反应。第一版的 IMT 结论因此有了更新的一层支撑。</p>
+    <div class="paper-kpi">覆盖健康成人 IMT 干预的急性与慢性心脏自主神经反应</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Sports (Basel) · 2025</span><span class="paper-badge">对照研究</span></div>
+    <h3>鼻呼吸 vs 口呼吸：氧合与运动后恢复</h3>
+    <p>结合第一版已收的两条（12 名高水平车手三种呼吸模式做功无显著差异；鼻呼吸抑制过度通气但心率更高），结论一致：</p>
+    <div class="paper-kpi"><b>低强度用鼻呼吸练通气效率，高强度别硬扛</b>——鼻腔呼吸是训练工具，不是比赛武器</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Diving Hyperb Med · 2026</span><span class="paper-badge">综述</span></div>
+    <h3>屏息训练能练出什么：从传统渔猎潜水员到精英运动员</h3>
+    <p>屏息能力可以通过训练提升（脾脏收缩、化学感受器钝化等适应），但适应高度专项化——这也再次提示屏息类训练的风险与门槛。</p>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">J Clin Med · 2026</span><span class="paper-badge">4 周干预</span></div>
+    <h3>组合呼吸训练 4 周：体能、睡眠、压力一起改善</h3>
+    <p>大学生每周 5 天：箱式 + 缩唇 + 阈值负荷吸气/呼气训练（40-60% MIP）。胸廓扩张度、屏息时间、起立-行走测试（TUG）等改善。</p>
+    <div class="paper-kpi"><b>多技法打包</b>比单一技法更接近真实使用方式</div>
+  </div>
+
+  <!-- ========== 放松方向 ========== -->
+  <p class="lg-section-title">最新论文 · 放松与睡眠</p>
+  <h2 class="lg-h2">2024–2026：放松 × 呼吸的七条新证据</h2>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Sleep Medicine Reviews · 2026</span><span class="paper-badge">9 研究 · 457 人</span></div>
+    <h3>睡前慢呼吸系统综述：给出了"为什么短周期测不出效果"</h3>
+    <p>全部是"睡前做、≤10 次/分"的慢呼吸干预。自报睡眠（7 项）一致改善；客观测量（体动记录仪 2 项 + 多导睡眠图 3 项）结论不一致。</p>
+    <div class="paper-kpi"><b>关键细节：3 项客观研究只做了 1 天干预，5 项自报研究做了 28-30 天</b>；6 项研究测 HRV，显示慢呼吸同时影响交感与副交感</div>
+    <div class="paper-take"><b>含义：</b>第一版"30 天才有改善"的经验数字，被系统综述升级为结论——<b>睡前课必须是长期挑战，不是一次性体验</b>。</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Appl Psychophysiol Biofeedback · 2026</span><span class="paper-badge">8 项 RCT</span></div>
+    <h3>方盒呼吸的第一份专门系统综述（结论很克制）</h3>
+    <p>只纳入"方盒呼吸为主干预"的 RCT：对主观压力、焦虑、情绪有短期获益，但 <b>"不均匀"</b>（不是每项研究都显著）；生理反应混合。</p>
+    <div class="paper-kpi">人群覆盖健康成人、产后与术后女性；方法学质量用 Cochrane RoB 2 评估</div>
+    <div class="paper-take"><b>含义：</b>第一版"方盒生理证据弱、主观有效"的判断得到了专门综述背书——可以理直气壮地把方盒定位成<b>场景仪式</b>而非生理工具。</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Anxiety, Stress &amp; Coping · 2026</span><span class="paper-badge">N=47 · 生态瞬时 RCT</span></div>
+    <h3>1 分钟呼吸干预：情绪急救 + 方盒的注意力红利</h3>
+    <p>47 名大学生在<b>真实急性威胁情境</b>中被随机分到箱式 / 循环叹息 / 被动对照，只做 1 分钟，5 分钟后测状态焦虑与注意力。</p>
+    <div class="paper-kpi">箱式与叹息<b>都显著降低状态焦虑</b>；但<b>只有箱式组在注意力测试中抑制错误更少</b></div>
+    <div class="paper-take"><b>含义：</b>"1 分钟急救"有直接 RCT 支撑；<b>需要专注的场景（考前、开会前）方盒优于叹息</b>。</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Psychology &amp; Health · 2026</span><span class="paper-badge">804 次观测</span></div>
+    <h3>日常生活里的慢呼吸：从实验室走进真实生活</h3>
+    <p>67 名中等压力学生、4 天、每天 3 次随机触发（micro-randomized），5 分钟引导慢呼吸；同时测主观压力与迷走神经介导 HRV，并把"觉得这个练习自然顺手"作为调节变量。</p>
+    <div class="paper-kpi">这是把慢呼吸放到<b>真实日常</b>里检验的一次密集纵向设计（804 次观测）</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">J Behav Med · 2025</span><span class="paper-badge">预试验 RCT</span></div>
+    <h3>循环叹息：从情绪扩展到疼痛</h3>
+    <p>在骨科诊所<b>候诊室</b>做循环叹息的随机对照预试验——患者疼痛下降。</p>
+    <div class="paper-kpi">场景是"等待中的焦虑 + 疼痛"，与"1 分钟微干预"的定位高度一致</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Int J Cardiol · 2024 ／ J Bodyw Mov Ther · 2024</span><span class="paper-badge">2 篇综述</span></div>
+    <h3>血压与自主神经：疾病人群的证据持续累积</h3>
+    <p>哈佛团队做的呼吸练习对血压与心率的系统综述与元分析；以及高血压患者呼吸练习对血流动力学与 HRV 的系统综述（不同呼吸模式效应有差异，但总体改善）。</p>
+    <div class="paper-kpi">与第一版的 Joseph 2005（6 次/分降压）形成跨 20 年的呼应</div>
+  </div>
+
+  <div class="paper lg-glass lg-rect lg-refract">
+    <div class="paper-top"><span class="paper-journal">Oncol Nurs Forum · 2026 ／ Caspian J Intern Med · 2026</span><span class="paper-badge">2 项 RCT</span></div>
+    <h3>瑜伽呼吸的临床 RCT（2026 新增两例）</h3>
+    <p>① 60 名化疗期乳腺癌女性：<b>4-4-4-4 瑜伽呼吸每天 2 次 × 5 分钟 × 21 天</b>（假呼吸对照）→ 压力与睡眠质量；<br>② 60 名血液透析患者：Sama Vritti 调息每天 2 次 × 2 个月 → 失眠严重度与疲劳。</p>
+    <div class="paper-kpi">"短单次 + 长周期"的剂量组合在临床人群里再次被验证</div>
+  </div>
+
+  <!-- ========== 对照 ========== -->
+  <p class="lg-section-title">对照</p>
+  <h2 class="lg-h2">新证据 vs 第一版结论</h2>
+  <div class="lg-table-wrap lg-glass">
+    <table class="lg-table">
+      <tr><th>第一版结论</th><th>新证据（2024-2026）</th><th>变化</th></tr>
+      <tr><td>睡前慢呼吸：30 天才有 PSQI 改善（单研究）</td><td>Sleep Med Rev 2026 系统综述（9 研究 457 人）：自报改善、客观不一致；<b>自报研究都用 28-30 天，客观研究多为 1 天</b></td><td><b>加强并解释</b></td></tr>
+      <tr><td>方盒：主观有效、生理证据弱</td><td>2026 方盒专门系统综述（8 RCT）：短期主观获益但"不均匀"、生理混合</td><td><b>加强</b></td></tr>
+      <tr><td>方盒价值在"腾出认知资源"（警察研究）</td><td>2026 生态瞬时 RCT（N=47）：1 分钟箱式与叹息都降焦虑；<b>箱式组注意力抑制错误更少</b></td><td><b>新增</b>：方盒 = 专注场景首选</td></tr>
+      <tr><td>生理性叹息是情绪急救主力</td><td>MSSE 2026：方盒与叹息都加速运动后副交感恢复；J Behav Med 2025：候诊室叹息减痛</td><td><b>扩展到运动恢复 + 疼痛</b></td></tr>
+      <tr><td>慢呼吸 / 共振 6 次每分是核心技法</td><td>IMT-自主神经综述 2026、血压 meta 2024、高血压 HRV 综述 2024</td><td><b>侧证</b>：证据持续累积</td></tr>
+      <tr><td>屏息有风险但运动人群有价值</td><td>自由潜屏息适应综述 2026；4 周组合训练（含屏息）2026</td><td><b>补强</b>：能力可训练，适应高度专项</td></tr>
+      <tr><td>中国缺"纯呼吸 + 运动绑定"产品</td><td>Peloton 收购 Breathwrk（2025-10）；FivePointFive 专做运动员共振呼吸</td><td><b>验证</b>：欧美第二层已成立，中国仍空白</td></tr>
+      <tr><td>（新增议题）9D / 躯体呼吸</td><td>2026 年被主流电视台报道为新健康趋势</td><td><b>存疑</b>：体验强、证据极少，要盯但别当科学卖</td></tr>
+    </table>
+  </div>
+
+  <div class="lg-note good lg-glass lg-rect">
+    <b>三条对选题的含义：</b>
+    ① <b>"运动后恢复"是 2026 年的最新证据高地</b>——方盒/叹息加速 HF-HRV 恢复刚被 RCT 证实，市面上还没有产品把它做成核心场景；
+    ② <b>"1 分钟微干预"有 RCT 支撑</b>，且方盒在专注场景有额外红利——"1 分钟"不是噱头；
+    ③ <b>睡前场景必须做长周期</b>（Sleep Med Rev 2026 的核心发现），单次体验在客观指标上无效——"30 天挑战"应该是产品骨架而不是运营活动。
+  </div>
+
+  <!-- ========== 来源 ========== -->
+  <p class="lg-section-title">参考来源</p>
+  <h2 class="lg-h2">本版新增 14 篇（编号接第一版）</h2>
+  <div class="lg-refs lg-glass">
+    <ol start="30">
+      <li>Jones ME, et al. <em>Effectiveness of Structured Breathwork Interventions on HRV and Heart Rate Recovery Following Maximal Exertion in Tactical Athletes.</em> Med Sci Sports Exerc, 2026;58(7):1524-1533. <a href="https://doi.org/10.1249/MSS.0000000000003972">doi:10.1249/MSS.0000000000003972</a></li>
+      <li>Eide EM, Hernes HM, Grønli J. <em>Slow breathing techniques before bedtime and the effects on sleep: A systematic review.</em> Sleep Med Rev, 2026;87:102284. <a href="https://doi.org/10.1016/j.smrv.2026.102284">doi:10.1016/j.smrv.2026.102284</a></li>
+      <li>Dujawara A, Ali K, Kumari S. <em>Systematic Review of RCTs Evaluating Box Breathing for Stress, Autonomic, and Clinical Outcomes.</em> Appl Psychophysiol Biofeedback, 2026. <a href="https://doi.org/10.1007/s10484-026-09812-7">doi:10.1007/s10484-026-09812-7</a></li>
+      <li><em>Just-in-time ecological momentary intervention: one-minute box breathing vs cyclic sighing on state anxiety and attention.</em> Anxiety Stress Coping, 2026;39(5):608-622. <a href="https://doi.org/10.1080/10615806.2026.2659809">doi:10.1080/10615806.2026.2659809</a></li>
+      <li><em>Immediate effects of slow-paced breathing on stress in daily life: a micro-randomised intensive longitudinal study.</em> Psychol Health, 2026. <a href="https://doi.org/10.1080/08870446.2026.2653702">doi:10.1080/08870446.2026.2653702</a></li>
+      <li>Hanley AW, et al. <em>Cyclic sighing in the clinic waiting room may decrease pain: a pilot RCT.</em> J Behav Med, 2025;48(2):385-393. <a href="https://doi.org/10.1007/s10865-024-00548-5">doi:10.1007/s10865-024-00548-5</a></li>
+      <li>Garg P, et al. <em>Effect of breathing exercises on blood pressure and heart rate: A systematic review and meta-analysis.</em> Int J Cardiol Cardiovasc Risk Prev, 2024;20:200232. <a href="https://doi.org/10.1016/j.ijcrp.2023.200232">doi:10.1016/j.ijcrp.2023.200232</a></li>
+      <li>Chaiduang S, et al. <em>The effect of breathing exercise on hemodynamics and HRV parameters in hypertensive patients: A systematic review.</em> J Bodyw Mov Ther, 2024;40:42-52. <a href="https://doi.org/10.1016/j.jbmt.2024.03.043">doi:10.1016/j.jbmt.2024.03.043</a></li>
+      <li>Algharbi FH, et al. <em>Inspiratory muscle training and cardiac autonomic function in healthy adults: a systematic review.</em> Front Cardiovasc Med, 2026;13:1935324. <a href="https://doi.org/10.3389/fcvm.2026.1935324">doi:10.3389/fcvm.2026.1935324</a></li>
+      <li>Lévénez M, et al. <em>Nasal vs oral breathing: oxygenation and post-exercise recovery.</em> Sports (Basel), 2025;13(10):368. <a href="https://doi.org/10.3390/sports13100368">doi:10.3390/sports13100368</a></li>
+      <li>Schipke JD, Limper U, Tetzlaff K. <em>Adaptations to breath-hold diving: from traditional divers to elite athletes.</em> Diving Hyperb Med, 2026;56(3):365-370. <a href="https://doi.org/10.28920/dhm56.3.365-370">doi:10.28920/dhm56.3.365-370</a></li>
+      <li><em>Breathing exercises and respiratory muscle training on physical performance, sleep quality, and perceived stress in university students.</em> J Clin Med, 2026;15(13):5151. <a href="https://doi.org/10.3390/jcm15135151">doi:10.3390/jcm15135151</a></li>
+      <li><em>Yoga breathing exercise on perceived stress and sleep quality in women with breast cancer undergoing chemotherapy: a randomized sham-controlled trial.</em> Oncol Nurs Forum, 2026;53(5).</li>
+      <li><em>Sama Vritti pranayama on sleep disturbance and fatigue in hemodialysis patients.</em> Caspian J Intern Med, 2026;17(2):457-463. <a href="https://doi.org/10.22088/cjim.17.2.457">doi:10.22088/cjim.17.2.457</a></li>
+    </ol>
+    <p style="font-size:12.5px;margin:12px 0 0;color:var(--lg-fg-2)">
+      <b>市场来源：</b>Peloton 收购 Breathwrk（pelobuddy.com, 2025-10）、FivePointFive 官网与 App Store、Vayu《Best Breathwork Technologies 2026》、App Store Tracker《Best Breathwork Apps 2026》、Othership 官网、9D breathwork 报道（KCTV5, 2026-03）、Bloomberg 呼吸趋势报道（2025-11）。
+    </p>
+  </div>
+
+  <div class="lg-footer">
+    呼吸法调研 · 第二版 ｜ 2026-09-23 ｜ 正本：<b>呼吸法调研-第二版-市面与最新证据.md</b>；第一版：《呼吸法全景调研》（同目录）。<br>
+    检索渠道：PubMed（2024-01 至 2026-12，按最新排序）、OpenAlex、应用商店与行业报道。
+  </div>
+
+</main>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === 'dark' ? 'light' : 'dark';
+});
+</script>
+</body>
+</html>

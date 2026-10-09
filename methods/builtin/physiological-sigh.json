@@ -1,0 +1,33 @@
+{
+  "id": "physiological-sigh",
+  "name": "生理性叹息",
+  "phases": [
+    {
+      "k": "inhale",
+      "s": 2
+    },
+    {
+      "k": "inhale2",
+      "s": 1
+    },
+    {
+      "k": "exhale",
+      "s": 6
+    }
+  ],
+  "cycles": 5,
+  "mode": "timed",
+  "geometry": "ring",
+  "meta": {
+    "scene": [
+      "减压"
+    ],
+    "source": "内置",
+    "safety": "none",
+    "evidence": {
+      "level": "★★",
+      "note": "双段吸气，最快见效的急性减压",
+      "ref": "Stanford 108 人实验"
+    }
+  }
+}
