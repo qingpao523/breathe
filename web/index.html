@@ -260,7 +260,7 @@ function renderCards(){
   document.querySelectorAll(".card").forEach(el=>{
     el.onclick = ()=>{
       document.querySelectorAll(".card").forEach(e=>e.classList.remove("sel"));
-      el.classList.add("sel"); cur = COURSES[+el.dataset.i]; renderCfg();
+      el.classList.add("sel"); cur = COURSES[+el.dataset.i]; renderCfg(); start(cur);
     };
   });
   renderCfg();
