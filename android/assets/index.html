@@ -352,62 +352,6 @@ function tlOf(m, lv){
 }
 function cycOf(m, lv){ return m.cyc[lv-1]; }
 
-function level01(){                        // 呼吸充盈度 0..1
-  const p = E.tl[E.idx]; if(!p) return 0;
-  const r = Math.min(1, E.t/p.sec);
-  if(p.k==="inhale")  return r;
-  if(p.k==="inhale2") return 0.75 + 0.25*r;
-  if(p.k==="hold")    return 1;
-  if(p.k==="exhale")  return 1-r;
-  return 0;
-}
-function draw(){
-  const m = E.m; if(!m) return;
-  g.clearRect(0,0,W,W); g.lineCap="round";
-  const glow = g.createRadialGradient(C,C,40,C,C,330);
-  glow.addColorStop(0,"rgba(94,224,255,.15)"); glow.addColorStop(1,"rgba(94,224,255,0)");
-  g.fillStyle=glow; g.fillRect(0,0,W,W);
-
-  const p = E.tl[E.idx], r = p ? Math.min(1,E.t/p.sec) : 0;
-  const total = E.tl.reduce((a,b)=>a+b.sec,0);
-  const prog = Math.min(1, ((E.cyc-1)*total + E.tl.slice(0,E.idx).reduce((a,b)=>a+b.sec,0) + E.t) / (total*E.cyc));
-
-  if(m.shape==="square"){
-    const s=240, rr=54, x0=C-s, y0=C-s, x1=C+s, y1=C+s;
-    g.beginPath(); g.moveTo(x0+rr,y0); g.lineTo(x1-rr,y0); g.quadraticCurveTo(x1,y0,x1,y0+rr);
-    g.lineTo(x1,y1-rr); g.quadraticCurveTo(x1,y1,x1-rr,y1); g.lineTo(x0+rr,y1);
-    g.quadraticCurveTo(x0,y1,x0,y1-rr); g.lineTo(x0,y0+rr); g.quadraticCurveTo(x0,y0,x0+rr,y0); g.closePath();
-    g.strokeStyle="rgba(255,255,255,.16)"; g.lineWidth=3; g.stroke();
-    const per=[[x0,y0,x1,y0],[x1,y0,x1,y1],[x1,y1,x0,y1],[x0,y1,x0,y0]], n=per.length;
-    const f=(E.idx+r)/n, sg=Math.min(n-1,Math.floor(f*n)), tt=f*n-sg, [ax,ay,bx,by]=per[sg];
-    g.beginPath(); g.arc(ax+(bx-ax)*tt, ay+(by-ay)*tt, 13, 0, 7);
-    g.fillStyle="#5ee0ff"; g.shadowColor="#5ee0ff"; g.shadowBlur=22; g.fill(); g.shadowBlur=0;
-  } else {
-    g.beginPath(); g.arc(C,C,250,0,7); g.strokeStyle="rgba(255,255,255,.16)"; g.lineWidth=3; g.stroke();
-    if(m.shape==="ring"){
-      g.beginPath(); g.arc(C,C,250,-Math.PI/2,-Math.PI/2+Math.PI*2*prog);
-      g.strokeStyle="rgba(94,224,255,.75)"; g.lineWidth=4; g.stroke();
-    } else {   // wave：连续波，无静止帧
-      g.beginPath();
-      for(let a=0;a<=6.3;a+=.05){
-        const rad = 250 + Math.sin(a*3 + prog*6.28)*10;
-        const x=C+Math.cos(a)*rad, y=C+Math.sin(a)*rad;
-        a===0 ? g.moveTo(x,y) : g.lineTo(x,y);
-      }
-      g.strokeStyle="rgba(94,224,255,.6)"; g.lineWidth=3; g.stroke();
-    }
-  }
-  const R = 44 + 62*level01();
-  const ball = g.createRadialGradient(C-14,C-18,8,C,C,R);
-  ball.addColorStop(0,"rgba(255,255,255,.9)"); ball.addColorStop(.45,"rgba(177,140,255,.72)");
-  ball.addColorStop(1,"rgba(94,224,255,.3)");
-  g.beginPath(); g.arc(C,C,R,0,7); g.fillStyle=ball; g.fill();
-  if(p && (p.k==="hold"||p.k==="hold2")){
-    const pu = 1+.06*Math.sin(Date.now()/220);
-    g.beginPath(); g.arc(C,C,(R+26)*pu,0,7); g.strokeStyle="rgba(255,158,203,.55)"; g.lineWidth=3; g.stroke();
-  }
-}
-
 function buzz(){
   if(!SETTINGS.vibrate) return;
   try{
@@ -447,7 +391,8 @@ function paint(){
   draw();
   document.getElementById("phTx").textContent = PHASE_TX[p.k] || "—";
   document.getElementById("ctTx").textContent = Math.max(1, Math.ceil(p.sec - E.t));
-  document.getElementById("hdTx").textContent = "循环 " + Math.min(E.cyc, cycOf(E.m,E.curLv)) + "/" + cycOf(E.m,E.curLv);
+  var _mo=window.__mode||"cyc", _cy=cycOf(E.m,E.curLv);
+  document.getElementById("hdTx").textContent = (_mo==="time") ? "按时间" : (_mo==="free") ? "自由" : ("循环 " + Math.min(E.cyc,_cy) + "/" + _cy);
 }
 
 /* ---- 连播 ---- */
@@ -460,7 +405,15 @@ function loadStep(){
   const st = E.list[E.si];
   E.m = METHODS.find(x=>x.id===st.id);
   E.curLv = st.lv || P[E.m.id].lv;              // 专项课可指定档位
-  if(E.m.card){ alert(E.m.name+" 需要器械，只做方法说明，不计入练习"); return nextStep(); }
+  if(E.m.card){
+    var _msg=E.m.name+" 需要器械，只做方法说明，不计入练习";
+    if(window.AndroidBridge&&window.AndroidBridge.toast){ try{ AndroidBridge.toast(_msg); }catch(e){ alert(_msg); } }
+    else alert(_msg);
+    E.mode="idle"; E.list=[]; last=0;
+    document.getElementById("g").classList.remove("on");
+    bridgeKeepOn(false);
+    return;
+  }
   E.tl = tlOf(E.m, E.curLv); E.idx=0; E.t=0; E.cyc=1; E.holdAdd=0;
   E.mode = "prepare"; E.pre = 3;
   document.getElementById("pre").classList.add("on");
@@ -617,7 +570,7 @@ $("gMain").onclick = ()=>{
 };
 $("shOK").onclick = ()=>{ $("sheet").classList.remove("on"); loadStep(); };
 $("shNo").onclick = ()=>{ $("sheet").classList.remove("on"); $("g").classList.remove("on"); bridgeKeepOn(false); };
-$("dShare").onclick = ()=>{ if(window.AndroidBridge) AndroidBridge.toast("分享卡片：本次 " + (E.elapsed/60).toFixed(1) + " 分钟"); };
+$("dShare").onclick = ()=>{ var _s="分享卡片：本次 " + (E.elapsed/60).toFixed(1) + " 分钟"; if(window.AndroidBridge&&window.AndroidBridge.toast){ try{ AndroidBridge.toast(_s); }catch(e){ alert(_s); } } else alert(_s); };
 $("dHome").onclick = ()=>{ $("d").classList.remove("on"); };
 document.querySelectorAll("#segSpd button").forEach(b=>{
   b.onclick = ()=>{
@@ -657,71 +610,6 @@ requestAnimationFrame(loop);
 function draw(){
   var m=E.m; if(!m) return;
   g.clearRect(0,0,W,W); g.lineCap="round";
-  var SH={dia:0,nose:0,coh:3,sigh:3,box:4,temp:6,co2:5};
-  var S=SH[m.id]; if(S===undefined) S=0;
-  var n=E.tl.length,i,v=[],t,R=250,cur=E.tl[E.idx];
-  var pp=cur?Math.min(1,E.t/cur.sec):0, pr=(E.idx+pp)/n, tot;
-  if(!S){ g.beginPath(); g.arc(C,C,R,0,6.2832); tot=2*Math.PI*R; }
-  else{
-    for(i=0;i<S;i++){ t=-1.5708+i*2*Math.PI/S; v.push([C+R*Math.cos(t),C+R*Math.sin(t)]); }
-    g.beginPath(); g.moveTo(v[0][0],v[0][1]);
-    for(i=1;i<S;i++) g.lineTo(v[i][0],v[i][1]);
-    g.closePath(); tot=S*2*R*Math.sin(Math.PI/S);
-  }
-  g.lineWidth=6; g.strokeStyle="rgba(255,255,255,.12)"; g.stroke();
-  g.save(); g.setLineDash([tot*pr,tot*2]); g.lineWidth=8; g.strokeStyle="#8fd0ff"; g.stroke(); g.restore();
-}
-function draw(){
-  var m = E.m; if(!m) return;
-  g.clearRect(0,0,W,W); g.lineCap = "round";
-  var SH = { dia:0, nose:0, coh:3, sigh:3, box:4, temp:6, co2:5 };
-  var S = SH[m.id]; if(S === undefined) S = 0;
-  var n = E.tl.length, i, v = [], t, R = 250, cur = E.tl[E.idx];
-  var pp = cur ? Math.min(1, E.t/cur.sec) : 0;
-  var pr, tot, cum = 0, mine = 0, base = 0, rem = 0;
-  if(!S){
-    tot = 2*Math.PI*R;
-    pr = (E.idx + pp) / n;
-    g.beginPath(); g.arc(C,C,R,0,6.2832);
-  } else {
-    base = Math.floor(S/n); rem = S % n;
-    for(i=0;i<E.idx;i++) cum += base + (i >= n-rem ? 1 : 0);
-    mine = base + (E.idx >= n-rem ? 1 : 0);
-    pr = (cum + mine*pp) / S;
-    for(i=0;i<S;i++){ t = -1.5708 + i*2*Math.PI/S; v.push([C+R*Math.cos(t), C+R*Math.sin(t)]); }
-    g.beginPath(); g.moveTo(v[0][0],v[0][1]);
-    for(i=1;i<S;i++) g.lineTo(v[i][0],v[i][1]);
-    g.closePath();
-    tot = S*2*R*Math.sin(Math.PI/S);
-  }
-  g.lineWidth = 6; g.strokeStyle = "rgba(255,255,255,.12)"; g.stroke();
-  g.save(); g.setLineDash([tot*pr, tot*2]); g.lineWidth = 8; g.strokeStyle = "#8fd0ff"; g.stroke(); g.restore();
-}
-function draw(){
-  var m=E.m; if(!m) return;
-  g.clearRect(0,0,W,W); g.lineCap="round";
-  var SH={dia:0,nose:0,coh:4,sigh:3,box:4,temp:6,co2:3};
-  var S=SH[m.id]; if(S===undefined) S=0;
-  var n=E.tl.length,i,v=[],t,R=250,cur=E.tl[E.idx];
-  var pp=cur?Math.min(1,E.t/cur.sec):0, pr, tot;
-  if(!S){
-    tot=2*Math.PI*R; pr=(E.idx+pp)/n;
-    g.beginPath(); g.arc(C,C,R,0,6.2832);
-  } else {
-    var done=((E.cyc-1)*n + E.idx + pp)/S;
-    pr=done-Math.floor(done);
-    for(i=0;i<S;i++){ t=-1.5708+i*2*Math.PI/S; v.push([C+R*Math.cos(t),C+R*Math.sin(t)]); }
-    g.beginPath(); g.moveTo(v[0][0],v[0][1]);
-    for(i=1;i<S;i++) g.lineTo(v[i][0],v[i][1]);
-    g.closePath();
-    tot=S*2*R*Math.sin(Math.PI/S);
-  }
-  g.lineWidth=6; g.strokeStyle="rgba(255,255,255,.12)"; g.stroke();
-  g.save(); g.setLineDash([tot*pr,tot*2]); g.lineWidth=8; g.strokeStyle="#8fd0ff"; g.stroke(); g.restore();
-}
-function draw(){
-  var m=E.m; if(!m) return;
-  g.clearRect(0,0,W,W); g.lineCap="round";
   var SH={dia:0,nose:0,coh:4,sigh:3,box:4,temp:6,co2:3};
   var S=SH[m.id]; if(S===undefined) S=0;
   var n=E.tl.length, R=250, cur=E.tl[E.idx], i, t;
@@ -743,8 +631,12 @@ function draw(){
   var base=Math.floor(did/S)*S, k;
   for(k=base;k<did;k++){
     var A=v[k%S], B=v[(k+1)%S];
+    var _pk=(E.tl[k%n]&&E.tl[k%n].k)||"inhale";
+    var _hp=(_pk==="hold"||_pk==="hold2");
+    g.save(); g.setLineDash(_hp?[7,13]:[]);
     g.beginPath(); g.moveTo(A[0],A[1]); g.lineTo(B[0],B[1]);
-    g.lineWidth=8; g.strokeStyle="#5ee0ff"; g.stroke();
+    g.lineWidth=8; g.strokeStyle=_hp?"rgba(255,158,203,.85)":"#5ee0ff"; g.stroke();
+    g.restore();
   }
   var ci=did%S, A2=v[ci], B2=v[(ci+1)%S];
   var hd=(cur&&(cur.k==="hold"||cur.k==="hold2"));
@@ -767,6 +659,7 @@ function draw(){
       var mo=window.__mode||"cyc";
       if(mo==="free"){ segVal.innerHTML='<button class="on">不限</button>'; return; }
       var arr=(mo==="cyc")?CY:TI, dft=(mo==="cyc")?6:10, v0=window.__val||dft;
+      if(window.__val==null){ window.__val=dft; if(window.setSetting)window.setSetting("val",dft); }
       segVal.innerHTML=arr.map(function(v){return '<button data-v="'+v+'"'+(v===v0?' class="on"':'')+'>'+v+(mo==="cyc"?" 次":" 分")+'</button>';}).join("");
       segVal.querySelectorAll("button").forEach(function(b){
         b.onclick=function(){ segVal.querySelectorAll("button").forEach(function(x){x.classList.remove("on")}); b.classList.add("on"); window.__val=+b.dataset.v; if(window.setSetting)window.setSetting("val",window.__val); };
