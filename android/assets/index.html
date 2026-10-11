@@ -73,6 +73,16 @@ canvas{width:100%;height:100%;display:block}
 .sheet .in{width:100%;background:#0d1523;border-radius:20px 20px 0 0;padding:20px;border-top:1px solid var(--st)}
 .sheet h3{margin:0 0 10px;font-size:16px}
 .sheet p{font-size:12.5px;color:var(--dim);line-height:1.7;margin:0 0 14px}
+.sw{position:relative;display:inline-block;width:42px;height:24px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid var(--st);transition:.18s;flex:0 0 auto}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#93a4bd;transition:.18s}
+.sw.on{background:rgba(94,224,255,.32);border-color:rgba(94,224,255,.55)}
+.sw.on::after{left:20px;background:#eaf6ff}
+.li.tap{cursor:pointer}.li.tap:active{opacity:.75}
+.rt{display:inline-flex;align-items:center;gap:8px;text-align:right}
+.rt em{font-style:normal;color:var(--dim);font-size:12px}
+.rt .tag{white-space:nowrap}
+.subrow{display:none;padding:2px 0 12px;font-size:12px;color:var(--dim);line-height:1.7}
+.subrow.on{display:block}
 </style>
 </head>
 <body>
@@ -125,14 +135,16 @@ canvas{width:100%;height:100%;display:block}
       <div class="nm"><b>最近 28 天</b><span class="tag" id="hStat"></span></div>
       <div class="hm" id="mineHeat"></div>
     </div>
-    <div class="card">
-      <div class="li"><span>骑行日提醒</span><em>出发前 30 分钟</em></div>
-      <div class="li"><span>睡前提醒</span><em>22:30</em></div>
-      <div class="li"><span>声音引导</span><em>开</em></div>
-      <div class="li"><span>相位震动</span><em>开</em></div>
-      <div class="li"><span>屏幕常亮</span><em>跟练期间</em></div>
-      <div class="li"><span>证据来源说明</span><em>研究报告 ›</em></div>
-      <div class="li"><span>免责声明</span><em>非医疗建议</em></div>
+    <div class="card" id="setCard">
+      <div class="li tap" data-set="remindRide"><span>骑行日提醒</span><span class="rt"><em>出发前 30 分钟</em><span class="tag">需原生支持</span><span class="sw" id="swRemindRide"></span></span></div>
+      <div class="li tap" data-set="remindSleep"><span>睡前提醒</span><span class="rt"><em>22:30</em><span class="tag">需原生支持</span><span class="sw" id="swRemindSleep"></span></span></div>
+      <div class="li tap" data-set="sound"><span>声音引导</span><span class="rt"><em id="tSound">开</em><span class="sw" id="swSound"></span></span></div>
+      <div class="li tap" data-set="vibrate"><span>相位震动</span><span class="rt"><em id="tVibrate">开</em><span class="sw" id="swVibrate"></span></span></div>
+      <div class="li tap" data-set="keepOn"><span>屏幕常亮</span><span class="rt"><em id="tKeepOn">开</em><span class="sw" id="swKeepOn"></span></span></div>
+      <div class="li tap" data-acc="ev"><span>证据来源说明</span><em class="acc">研究报告 ›</em></div>
+      <div class="subrow" id="accEv">证据强度标注：★★★ = 多项 RCT 或元分析支持；★★ = 至少一项对照研究；★ = 传统实践/机制合理，但缺高质量人体试验。<br>evidence/techniques.md</div>
+      <div class="li tap" data-acc="ds"><span>免责声明</span><em class="acc">非医疗建议 ›</em></div>
+      <div class="subrow" id="accDs">非医疗建议。本 App 用于呼吸训练与放松，不替代诊断与治疗；如有心血管、呼吸系统疾病或孕产情况，请先咨询医生。</div>
     </div>
   </section>
 </div>
@@ -160,6 +172,9 @@ canvas{width:100%;height:100%;display:block}
   <div class="ctl">
     <div class="seg" id="segSpd">
       <button data-v="1" class="on">标准</button><button data-v="1.35">慢</button><button data-v="1.7">更慢</button>
+    </div>
+    <div class="seg" id="segVis">
+      <button data-v="1" class="on">声音开</button><button data-v="0">声音关</button>
     </div>
     <button class="main" id="gMain">暂停</button>
   </div>
@@ -196,6 +211,44 @@ canvas{width:100%;height:100%;display:block}
    §1 数据层：8 个方法（★ 及以上）+ 1 个专项
    ============================================================ */
 const PHASE_TX = { inhale:"吸", inhale2:"补吸", hold:"屏", exhale:"呼", hold2:"持" };
+
+/* ===== storage layer ===== */
+var S={get:function(k,d){try{var v=localStorage.getItem("breathe:"+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+       set:function(k,v){try{localStorage.setItem("breathe:"+k,JSON.stringify(v))}catch(e){}}};
+/* ===== settings (persisted) ===== */
+const SETTINGS=Object.assign({sound:true,vibrate:true,keepOn:true,remindRide:false,remindSleep:false,speed:1,mode:"cyc",val:6},S.get("settings",{}));
+
+/* ===== WebAudio phase cues ===== */
+var AC=null;
+var CUE_HZ={inhale:520,inhale2:520,hold:660,exhale:330,hold2:440};
+function initAudio(){
+  if(AC){ if(AC.state==="suspended"){try{AC.resume();}catch(e){}} return; }
+  try{
+    var Ctx=window.AudioContext||window.webkitAudioContext;
+    if(!Ctx) return;
+    AC=new Ctx();
+    if(AC.state==="suspended"){try{AC.resume();}catch(e){}}
+  }catch(e){AC=null;}
+}
+function cue(kind){
+  if(!SETTINGS.sound||!AC) return;
+  try{
+    var f=CUE_HZ[kind]||440,t0=AC.currentTime;
+    var o=AC.createOscillator(),gn=AC.createGain();
+    o.type="sine"; o.frequency.setValueAtTime(f,t0);
+    gn.gain.setValueAtTime(0.0001,t0);
+    gn.gain.exponentialRampToValueAtTime(0.05,t0+0.012);
+    gn.gain.exponentialRampToValueAtTime(0.0001,t0+0.12);
+    o.connect(gn); gn.connect(AC.destination);
+    o.start(t0); o.stop(t0+0.13);
+  }catch(e){}
+}
+
+function saveSettings(){S.set("settings",SETTINGS);}
+function bridgeKeepOn(on){try{if(window.AndroidBridge&&window.AndroidBridge.keepScreenOn)window.AndroidBridge.keepScreenOn(on?true:false);}catch(e){}}
+function applySetting(k){ if(k==="sound"){ if(SETTINGS.sound) initAudio(); } else if(k==="keepOn"){ bridgeKeepOn(SETTINGS.keepOn?true:false); } }
+function setSetting(k,v){SETTINGS[k]=v;saveSettings();applySetting(k);if(window.syncSettingsUI)window.syncSettingsUI();}
+window.setSetting=setSetting;window.__settings=SETTINGS;
 
 /* shape: square 方形轨道 / ring 圆环 / wave 连续波 */
 const METHODS = [
@@ -265,6 +318,16 @@ const NEED = [3,5];                       // 连 L1 3 次升 L2；连 L2 5 次�
 const P = {};                             // {methodId:{lv,streak,done}}
 METHODS.forEach(m => P[m.id] = { lv:1, streak:0, done:0 });
 let TOT = 0, UPG = 0, MIN = 0, DAYS = 1, heat = new Array(28).fill(0);
+(function(){ var sv=S.get("progress",null); if(!sv||typeof sv!=="object") return;
+  if(sv.P) METHODS.forEach(function(m){var q=sv.P[m.id]; if(q) P[m.id]={lv:q.lv||1,streak:q.streak||0,done:q.done||0};});
+  if(typeof sv.TOT==="number") TOT=sv.TOT;
+  if(typeof sv.UPG==="number") UPG=sv.UPG;
+  if(typeof sv.MIN==="number") MIN=sv.MIN;
+  if(typeof sv.DAYS==="number") DAYS=sv.DAYS;
+  if(Object.prototype.toString.call(sv.heat)==="[object Array]"&&sv.heat.length===28) heat=sv.heat;
+})();
+function saveProgress(){S.set("progress",{P:P,TOT:TOT,UPG:UPG,MIN:MIN,DAYS:DAYS,heat:heat});}
+
 
 function dots(n){ return "●".repeat(n) + "○".repeat(5-n); }
 function bar(lv){ return "●".repeat(lv) + "○".repeat(3-lv); }
@@ -345,7 +408,13 @@ function draw(){
   }
 }
 
-function buzz(){ if(navigator.vibrate) navigator.vibrate(18); }
+function buzz(){
+  if(!SETTINGS.vibrate) return;
+  try{
+    if(window.AndroidBridge&&window.AndroidBridge.vibrate) window.AndroidBridge.vibrate(18);
+    else if(navigator.vibrate) navigator.vibrate(18);
+  }catch(e){}
+}
 
 let last = 0;
 function loop(now){
@@ -354,7 +423,7 @@ function loop(now){
   const dt = Math.min(.05,(now-last)/1000); last = now;
   if(E.mode==="prepare"){
     E.pre -= dt;
-    if(E.pre<=0){ E.mode="run"; document.getElementById("pre").classList.remove("on"); }
+    if(E.pre<=0){ E.mode="run"; document.getElementById("pre").classList.remove("on"); if(E.tl[E.idx]) cue(E.tl[E.idx].k); }
     else document.getElementById("preTx").textContent = Math.ceil(E.pre);
   }
   if(E.mode!=="run") return;
@@ -369,6 +438,7 @@ function loop(now){
       E.tl = tlOf(E.m, E.curLv);
     }
     buzz();
+    if(E.tl[E.idx]) cue(E.tl[E.idx].k);
   }
   paint();
 }
@@ -401,6 +471,7 @@ function loadStep(){
   document.getElementById("gMain").textContent = "暂停";
 }
 function startPlaylist(list){
+  initAudio(); if(SETTINGS.keepOn) bridgeKeepOn(true);
   E.list = list; E.si = 0; E.elapsed = 0; E.switches = 0; E.mode="prepare";
   const high = list.some(s => (METHODS.find(x=>x.id===s.id)||{}).safety === "high");
   document.getElementById("g").classList.add("on");
@@ -409,6 +480,7 @@ function startPlaylist(list){
   loadStep();
 }
 function finish(){
+  bridgeKeepOn(false);
   E.mode = "idle"; last = 0;
   document.getElementById("g").classList.remove("on");
   document.getElementById("d").classList.add("on");
@@ -425,6 +497,7 @@ function finish(){
   document.getElementById("dUp").innerHTML = up
     ? '<div class="up">⬆ ' + up + ' · ' + m.rec[p.lv-1] + '</div>'
     : '<div class="up">' + m.name + ' · ' + bar(p.lv) + ' · 再练 ' + (NEED[p.lv-1]-p.streak) + ' 次升级</div>';
+  saveProgress();
   renderAll();
 }
 
@@ -536,22 +609,48 @@ document.querySelectorAll("#tabbar button").forEach(b=>{
     window.scrollTo(0,0);
   };
 });
-$("gBack").onclick = ()=>{ E.mode="idle"; last=0; $("g").classList.remove("on"); };
+$("gBack").onclick = ()=>{ E.mode="idle"; last=0; bridgeKeepOn(false); $("g").classList.remove("on"); };
 $("gSkip").onclick = ()=>{ E.mode="idle"; last=0; nextStep(); };
 $("gMain").onclick = ()=>{
   if(E.mode==="run"){ E.mode="paused"; $("gMain").textContent="继续"; }
   else if(E.mode==="paused"){ E.mode="run"; last=0; $("gMain").textContent="暂停"; }
 };
 $("shOK").onclick = ()=>{ $("sheet").classList.remove("on"); loadStep(); };
-$("shNo").onclick = ()=>{ $("sheet").classList.remove("on"); $("g").classList.remove("on"); };
+$("shNo").onclick = ()=>{ $("sheet").classList.remove("on"); $("g").classList.remove("on"); bridgeKeepOn(false); };
 $("dShare").onclick = ()=>{ if(window.AndroidBridge) AndroidBridge.toast("分享卡片：本次 " + (E.elapsed/60).toFixed(1) + " 分钟"); };
 $("dHome").onclick = ()=>{ $("d").classList.remove("on"); };
 document.querySelectorAll("#segSpd button").forEach(b=>{
   b.onclick = ()=>{
     document.querySelectorAll("#segSpd button").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); E.speed = parseFloat(b.dataset.v);
+    b.classList.add("on"); E.speed = parseFloat(b.dataset.v); SETTINGS.speed = E.speed; saveSettings();
   };
 });
+
+/* ===== settings page wiring ===== */
+function syncSettingsUI(){
+  var map={sound:"swSound",vibrate:"swVibrate",keepOn:"swKeepOn",remindRide:"swRemindRide",remindSleep:"swRemindSleep"};
+  Object.keys(map).forEach(function(k){var el=$(map[k]); if(el) el.classList.toggle("on",SETTINGS[k]?true:false);});
+  var tx={sound:"tSound",vibrate:"tVibrate",keepOn:"tKeepOn"};
+  Object.keys(tx).forEach(function(k){var el=$(tx[k]); if(el) el.textContent=SETTINGS[k]?"开":"关";});
+  var sv=$("segVis");
+  if(sv) sv.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",(b.dataset.v==="1")===(SETTINGS.sound?true:false));});
+}
+window.syncSettingsUI=syncSettingsUI;
+document.querySelectorAll("[data-set]").forEach(function(el){
+  el.onclick=function(){var k=el.dataset.set; setSetting(k,SETTINGS[k]?false:true);};
+});
+document.querySelectorAll("[data-acc]").forEach(function(el){
+  el.onclick=function(){var box=$(el.dataset.acc==="ev"?"accEv":"accDs"); if(box) box.classList.toggle("on");};
+});
+document.querySelectorAll("#segVis button").forEach(function(b){
+  b.onclick=function(){setSetting("sound",b.dataset.v==="1");};
+});
+(function(){
+  var v=String(SETTINGS.speed||1);
+  var b=document.querySelector('#segSpd button[data-v="'+v+'"]');
+  if(b){document.querySelectorAll("#segSpd button").forEach(function(x){x.classList.remove("on");}); b.classList.add("on"); E.speed=parseFloat(v);}
+})();
+syncSettingsUI();
 
 renderAll();
 requestAnimationFrame(loop);
@@ -670,13 +769,15 @@ function draw(){
       var arr=(mo==="cyc")?CY:TI, dft=(mo==="cyc")?6:10, v0=window.__val||dft;
       segVal.innerHTML=arr.map(function(v){return '<button data-v="'+v+'"'+(v===v0?' class="on"':'')+'>'+v+(mo==="cyc"?" 次":" 分")+'</button>';}).join("");
       segVal.querySelectorAll("button").forEach(function(b){
-        b.onclick=function(){ segVal.querySelectorAll("button").forEach(function(x){x.classList.remove("on")}); b.classList.add("on"); window.__val=+b.dataset.v; };
+        b.onclick=function(){ segVal.querySelectorAll("button").forEach(function(x){x.classList.remove("on")}); b.classList.add("on"); window.__val=+b.dataset.v; if(window.setSetting)window.setSetting("val",window.__val); };
       });
     }
     segMode.querySelectorAll("button").forEach(function(b){
-      b.onclick=function(){ segMode.querySelectorAll("button").forEach(function(x){x.classList.remove("on")}); b.classList.add("on"); window.__mode=b.dataset.m; window.__val=null; renderVal(); };
+      b.onclick=function(){ segMode.querySelectorAll("button").forEach(function(x){x.classList.remove("on")}); b.classList.add("on"); window.__mode=b.dataset.m; window.__val=null; if(window.setSetting)window.setSetting("mode",window.__mode); renderVal(); };
     });
-    window.__mode="cyc"; renderVal();
+    window.__mode=(window.__settings&&window.__settings.mode)||"cyc";
+    window.__val=(window.__settings&&typeof window.__settings.val==="number")?window.__settings.val:null;
+    renderVal();
   }
   var _cyc=cycOf;
   cycOf=function(m,lv){

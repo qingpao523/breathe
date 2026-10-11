@@ -18,7 +18,7 @@ s2="<string name=\"app_name2\">\u547c\u5438\u6d4b\u8bd5</string>\n</resources>\n
 open(os.path.join(ROOT,"android","res","values","strings.xml"),"w",encoding="utf-8").write(s1+s2)
 open(os.path.join(AND,"assets","index.html"),"w",encoding="utf-8").write(open(os.path.join(ROOT,"android","assets","index.html"),encoding="utf-8").read())
 m1="<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"com.qingpao.app\" android:versionCode=\"2\" android:versionName=\"2.0\">\n"
-m2="<uses-sdk android:minSdkVersion=\"26\" android:targetSdkVersion=\"34\"/>\n<uses-permission android:name=\"android.permission.VIBRATE\"/>\n<application android:label=\"@string/app_name2\">\n"
+m2="<uses-sdk android:minSdkVersion=\"26\" android:targetSdkVersion=\"34\"/>\n<uses-permission android:name=\"android.permission.VIBRATE\"/>\n<application android:label=\"@string/app_name\" android:icon=\"@mipmap/ic_launcher\" android:roundIcon=\"@mipmap/ic_launcher_round\">\n"
 m3="<activity android:name=\".MainActivity\" android:exported=\"true\"><intent-filter><action android:name=\"android.intent.action.MAIN\"/><category android:name=\"android.intent.category.LAUNCHER\"/></intent-filter></activity></application></manifest>\n"
 open(os.path.join(AND,"AndroidManifest.xml"),"w",encoding="utf-8").write(m1+m2+m3)
 j1="package com.qingpao.app;\nimport android.app.Activity; import android.os.Bundle; import android.widget.TextView;\nimport android.webkit.WebView; import android.webkit.WebSettings; import android.webkit.WebViewClient;\n"
