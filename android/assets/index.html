@@ -670,6 +670,7 @@ function draw(){
     });
     window.__mode=(window.__settings&&window.__settings.mode)||"cyc";
     window.__val=(window.__settings&&typeof window.__settings.val==="number")?window.__settings.val:null;
+    segMode.querySelectorAll("button").forEach(function(x){ x.classList.toggle("on", x.dataset.m===window.__mode); });
     renderVal();
   }
   var _cyc=cycOf;
