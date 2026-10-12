@@ -144,7 +144,7 @@ canvas{width:100%;height:100%;display:block}
     <div class="kpi">
       <div><b id="kMin">0</b><em>累计分钟</em></div>
       <div><b id="kDays">0</b><em>连续天数</em></div>
-      <div><b id="kUp">0</b><em>本周升级</em></div>
+      <div><b id="kUp">0</b><em>累计升级</em></div>
     </div>
     <div class="card" style="margin-top:14px">
       <div class="nm"><b>最近 28 天</b><span class="tag" id="hStat"></span></div>
@@ -310,6 +310,11 @@ const METHODS = [
     phases:[{k:"inhale",s:5.5},{k:"exhale",s:5.5}], cyc:[10,10,10], dur:[300,600,900],
     rec:["5 分钟","10 分钟","15 分钟"] },
 
+  { id:"478", name:"4-7-8 助眠仪式", group:"睡眠", level:2, ev:"★ 仪式型", shape:"ring", scene:["睡眠","放松"],
+    trains:"睡前降速与仪式感 —— 生理证据弱，但主观助眠口碑最强，定位为入睡仪式",
+    phases:[{k:"inhale",s:4},{k:"hold",s:7},{k:"exhale",s:8}], cyc:[4,6,8],
+    rec:["4 循环","6 循环","8 循环"] },
+
   { id:"nose", name:"鼻腔呼吸训练", group:"运动", level:2, ev:"★★", shape:"wave", scene:["运动"],
     trains:"通气效率 —— 运动中少过度通气，把呼吸交换率压在 1.0 以下",
     phases:[{k:"inhale",s:4},{k:"exhale",s:4}], cyc:[10,10,10], dur:[300,480,600],
@@ -360,16 +365,36 @@ const SPECIALTIES = [
 const NEED = [3,5];                       // 连 L1 3 次升 L2；连 L2 5 次升 L3
 const P = {};                             // {methodId:{lv,streak,done}}
 METHODS.forEach(m => P[m.id] = { lv:1, streak:0, done:0 });
-let TOT = 0, UPG = 0, MIN = 0, DAYS = 1, heat = new Array(28).fill(0);
-(function(){ var sv=S.get("progress",null); if(!sv||typeof sv!=="object") return;
-  if(sv.P) METHODS.forEach(function(m){var q=sv.P[m.id]; if(q) P[m.id]={lv:q.lv||1,streak:q.streak||0,done:q.done||0};});
-  if(typeof sv.TOT==="number") TOT=sv.TOT;
-  if(typeof sv.UPG==="number") UPG=sv.UPG;
-  if(typeof sv.MIN==="number") MIN=sv.MIN;
-  if(typeof sv.DAYS==="number") DAYS=sv.DAYS;
-  if(Object.prototype.toString.call(sv.heat)==="[object Array]"&&sv.heat.length===28) heat=sv.heat;
+let TOT = 0, UPG = 0, MIN = 0, DAYS = 0, HEAT = {}; let LASTDAY = null;
+function pad2(n){ return (n<10?"0":"")+n; }
+function dstr(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function todayStr(){ return dstr(new Date()); }
+function agoStr(n){ var d=new Date(); d.setDate(d.getDate()-n); return dstr(d); }
+function lastDates(n){ var a=[],i; for(i=n-1;i>=0;i--){ a.push(agoStr(i)); } return a; }
+function heatCells(n){ return lastDates(n).map(function(k){ return '<i class="'+(HEAT[k]?"f":"")+'"></i>'; }).join(""); }
+function heatCount(n){ return lastDates(n).filter(function(k){ return HEAT[k]?true:false; }).length; }
+function streakShown(){ return (LASTDAY&&LASTDAY===agoStr(1)) ? DAYS+1 : DAYS; }
+(function(){
+  var sv=S.get("progress",null);
+  if(sv&&typeof sv==="object"){
+    if(sv.P) METHODS.forEach(function(m){var q=sv.P[m.id]; if(q) P[m.id]={lv:q.lv||1,streak:q.streak||0,done:q.done||0};});
+    if(typeof sv.TOT==="number") TOT=sv.TOT;
+    if(typeof sv.UPG==="number") UPG=sv.UPG;
+    if(typeof sv.MIN==="number") MIN=sv.MIN;
+    var oa=Object.prototype.toString.call(sv.heat)==="[object Array]";
+    if(sv.heat&&oa&&sv.heat.indexOf(1)>=0){ HEAT[todayStr()]=1; }
+  }
+  var dv=S.get("days",null);
+  if(typeof dv==="number"&&dv>0) DAYS=dv;
+  var h=S.get("heat",null);
+  var ha=Object.prototype.toString.call(h)==="[object Array]";
+  if(h&&typeof h==="object"&&ha===false){ HEAT=h; }
+  else if(h&&ha&&h.indexOf(1)>=0){ HEAT[todayStr()]=1; }
+  LASTDAY=S.get("lastday",null);
+  if(typeof LASTDAY==="string"){ } else { LASTDAY=null; }
+  if(LASTDAY&&LASTDAY<agoStr(1)){ DAYS=0; S.set("days",0); }
 })();
-function saveProgress(){S.set("progress",{P:P,TOT:TOT,UPG:UPG,MIN:MIN,DAYS:DAYS,heat:heat});}
+function saveProgress(){S.set("progress",{P:P,TOT:TOT,UPG:UPG,MIN:MIN});}
 
 /* badges: persisted + idempotent */
 const BADGES=[
@@ -453,7 +478,7 @@ function unlocked(){ return METHODS.reduce((a,m)=>a+P[m.id].lv,0); }
    ============================================================ */
 const cv = document.getElementById("cv"), g = cv.getContext("2d");
 const W = 720, C = W/2;
-const SH={dia:0,nose:8,coh:4,sigh:3,box:4,temp:6,co2:3};
+const SH={dia:0,nose:8,coh:4,sigh:3,box:4,temp:6,co2:3,478:3};
 
 const E = { list:[ ], si:0, m:null, tl:[ ], idx:0, t:0, cyc:1, mode:"idle",
 
@@ -558,7 +583,13 @@ function finish(){
   // 档位推进
   const st = E.list[0], m = METHODS.find(x=>x.id===st.id), p = P[m.id];
   const _p0={tot:TOT,lv:p.lv,streak:p.streak};
-  p.done++; p.streak++; MIN += E.elapsed/60; TOT++; heat[27] = 1;
+  p.done++; p.streak++; MIN += E.elapsed/60; TOT++;
+  var _td=todayStr();
+  if(_td===LASTDAY){ }
+  else if(LASTDAY&&LASTDAY===agoStr(1)){ DAYS=DAYS+1; }
+  else { DAYS=1; }
+  LASTDAY=_td; HEAT[_td]=1;
+  S.set("days",DAYS); S.set("lastday",LASTDAY); S.set("heat",HEAT);
   let up = null;
   if(p.lv < 3 && p.streak >= NEED[p.lv-1]){ p.lv++; p.streak = 0; UPG++; up = m.name + " 升到 L" + p.lv; }
   document.getElementById("dName").textContent =
@@ -636,10 +667,10 @@ function renderMine(){
   $("mUnlock").textContent = "已解锁 " + unlocked() + "/" + (METHODS.length*3);
   $("mTip").textContent = "累计 " + MIN.toFixed(0) + " 分钟 · 完成 " + TOT + " 次 · 距下一段位还差 " + Math.max(0, 30-(MIN%30)).toFixed(0) + " 分钟";
   $("kMin").textContent = MIN.toFixed(0);
-  $("kDays").textContent = DAYS;
+  $("kDays").textContent = streakShown();
   $("kUp").textContent = UPG;
-  $("hStat").textContent = "完成 " + heat.filter(x=>x).length + " 天";
-  $("mineHeat").innerHTML = heat.map(v=>'<i class="'+(v?"f":"")+'"></i>').join("");
+  $("hStat").textContent = "完成 " + heatCount(28) + " 天";
+  $("mineHeat").innerHTML = heatCells(28);
   var _got=collectedBadges(), _eb=[], _bi, _b;
   for(_bi=0;_bi<_got.length;_bi++){
     _b=BADGES.filter(function(x){return x.id===_got[_bi];})[0];
@@ -679,8 +710,8 @@ function renderHome(){
   }
   $("segName").textContent = "呼吸段位 L" + (Math.floor(MIN/30)+1);
   $("segCnt").textContent = UPG + " 次升级";
-  $("segTip").textContent = "已解锁 " + unlocked() + "/" + (METHODS.length*3) + " 档 · 连续 " + DAYS + " 天";
-  $("homeHeat").innerHTML = heat.slice(21).map(v=>'<i class="'+(v?"f":"")+'"></i>').join("");
+  $("segTip").textContent = "已解锁 " + unlocked() + "/" + (METHODS.length*3) + " 档 · 连续 " + streakShown() + " 天";
+  $("homeHeat").innerHTML = heatCells(7);
   const quick = METHODS.filter(m=>!m.card).slice(0,3);
   $("homeQuick").innerHTML = quick.map(m=>{
     const p=P[m.id];
