@@ -83,7 +83,22 @@ canvas{width:100%;height:100%;display:block}
 .rt .tag{white-space:nowrap}
 .subrow{display:none;padding:2px 0 12px;font-size:12px;color:var(--dim);line-height:1.7}
 .subrow.on{display:block}
+/* ===== badges / progress / share ===== */
+.bdgs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.bdg{display:flex;align-items:center;gap:9px;padding:10px 11px;border:1px solid var(--st);border-radius:12px;background:rgba(255,255,255,.03)}
+.bdg svg{width:20px;height:20px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;color:#cfe0f5}
+.bdg b{display:block;font-size:12.5px;font-weight:600;color:#e6effc}
+.bdg em{display:block;font-style:normal;font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.35}
+.bdgm{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 2px}
+.pb{height:6px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--st);overflow:hidden;margin-top:11px}
+.pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+#dCv{display:none;width:128px;height:128px;margin:2px auto 8px}
+#dCv.on{display:block}
+.svwrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;min-height:0}
+.svimg{max-width:84vw;max-height:68vh;border-radius:14px;border:1px solid var(--st);box-shadow:0 18px 60px rgba(0,0,0,.55);margin:auto}
+.svtip{text-align:center;font-size:12.5px;color:var(--dim);padding:14px 0 4px}
 </style>
+
 </head>
 <body>
 <div class="wrap">
@@ -134,6 +149,11 @@ canvas{width:100%;height:100%;display:block}
     <div class="card" style="margin-top:14px">
       <div class="nm"><b>最近 28 天</b><span class="tag" id="hStat"></span></div>
       <div class="hm" id="mineHeat"></div>
+    </div>
+    <div class="sec">徽章</div>
+    <div class="card">
+      <div class="nm"><b>已获得</b><span class="tag go" id="bCnt">0/5</span></div>
+      <div class="bdgs" id="badgeBox"></div>
     </div>
     <div class="card" id="setCard">
       <div class="li tap" data-set="remindRide"><span>骑行日提醒</span><span class="rt"><em>出发前 30 分钟</em><span class="tag">需原生支持</span><span class="sw" id="swRemindRide"></span></span></div>
@@ -190,10 +210,15 @@ canvas{width:100%;height:100%;display:block}
 
 <!-- ============ 结束页 ============ -->
 <section id="d" class="ov">
+  <canvas id="dCv" width="256" height="256"></canvas>
   <div class="fin">
     <h2 id="dTx">又赢了一次</h2>
     <div class="sub" id="dName"></div>
     <div id="dUp"></div>
+  </div>
+  <div class="card" id="dProg">
+    <div class="nm"><b id="dTot">累计 0 次</b><span class="tag" id="dLv">L1 · 0/3</span></div>
+    <div class="pb"><i id="dPb"></i></div>
   </div>
   <div class="kpi">
     <div><b id="dMin">0</b><em>分钟</em></div>
@@ -204,6 +229,24 @@ canvas{width:100%;height:100%;display:block}
     <button class="main" id="dShare">分享卡片</button>
     <button class="minor" id="dHome">回到首页</button>
   </div>
+  <div class="sheet" id="bdgSheet">
+    <div class="in">
+      <h3 id="bdgTitle">获得新徽章</h3>
+      <div class="bdgm" id="bdgNewBox"></div>
+      <p id="bdgSub">保持节奏，下一枚在路上。</p>
+      <button class="main" id="bdgOK">收下</button>
+    </div>
+  </div>
+</section>
+
+<section id="sv" class="ov">
+  <div class="ov-top">
+    <button class="ghost" id="svClose">返回</button>
+    <div class="gt"><b>分享卡片</b><em>1080 × 1440 · 3:4</em></div>
+    <span style="width:56px"></span>
+  </div>
+  <div class="svwrap"><img id="svImg" class="svimg" alt="share card"></div>
+  <div class="svtip">长按图片保存到相册</div>
 </section>
 
 <script>
@@ -328,6 +371,78 @@ let TOT = 0, UPG = 0, MIN = 0, DAYS = 1, heat = new Array(28).fill(0);
 })();
 function saveProgress(){S.set("progress",{P:P,TOT:TOT,UPG:UPG,MIN:MIN,DAYS:DAYS,heat:heat});}
 
+/* badges: persisted + idempotent */
+const BADGES=[
+ {id:"habit", name:"习惯", desc:"任一方法累计 10 次",
+  test:function(){
+    return METHODS.some(function(m){return P[m.id].done>=10;});
+  }},
+ {id:"skilled", name:"熟练", desc:"总累计 100 次",
+  test:function(){ return TOT>=100; }},
+ {id:"hundred", name:"百次", desc:"单方法累计 100 次",
+  test:function(){
+    return METHODS.some(function(m){return P[m.id].done>=100;});
+  }},
+ {id:"days7", name:"连续 7 天", desc:"连续练习满 7 天",
+  test:function(){ return DAYS>=7; }},
+ {id:"allopen", name:"全法·全开", desc:"全部可跟练方法 ≥3 次",
+  test:function(){
+    var core=METHODS.filter(function(m){
+      return (m.card?false:true);
+    });
+    if(core.length===0){ return false; }
+    return core.every(function(m){return P[m.id].done>=3;});
+  }}
+];
+const BICON={
+ habit:'<svg viewBox="0 0 24 24">'
+  +'<circle cx="12" cy="12" r="8"/>'
+  +'<path d="M8.6 12.3l2.3 2.3 4.5-5"/>'
+  +'</svg>',
+ skilled:'<svg viewBox="0 0 24 24">'
+  +'<path d="M12 3.5l7.5 8.5-7.5 8.5L4.5 12z"/>'
+  +'<path d="M12 8l3.2 4-3.2 4-3.2-4z"/>'
+  +'</svg>',
+ hundred:'<svg viewBox="0 0 24 24">'
+  +'<path d="M6.5 8.5l2.2-2v11"/>'
+  +'<path d="M12.5 8.5l2.2-2v11"/>'
+  +'<circle cx="19" cy="12" r="2.6"/>'
+  +'</svg>',
+ days7:'<svg viewBox="0 0 24 24">'
+  +'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/>'
+  +'<path d="M3.5 10h17M8 3v4M16 3v4"/>'
+  +'<path d="M7.5 14.2h4"/>'
+  +'</svg>',
+ allopen:'<svg viewBox="0 0 24 24">'
+  +'<path d="M8.5 3.5h7l4.5 4.5v7l-4.5 4.5h-7L4 15v-7z"/>'
+  +'<path d="M12 8.2v7.6M8.2 12h7.6"/>'
+  +'</svg>'
+};
+function badgeIcon(b){
+  var s=BICON[b.id];
+  if(s===undefined){ s=''; }
+  if(s===null){ s=''; }
+  return s;
+}
+function collectedBadges(){
+  var g=S.get("badges",[]);
+  if(Array.isArray(g)){ return g; }
+  return [];
+}
+function refreshBadges(){
+  var got=BADGES.filter(function(b){return b.test();});
+  var fresh=[], list=collectedBadges(), i, id;
+  for(i=0;i<got.length;i++){
+    id=got[i].id;
+    if(list.indexOf(id)<0){ list.push(id); fresh.push(id); }
+  }
+  if(fresh.length>0){ S.set("badges",list); }
+  var ids=[];
+  for(i=0;i<got.length;i++){ ids.push(got[i].id); }
+  return {got:ids,list:list,fresh:fresh};
+}
+
+
 
 function dots(n){ return "●".repeat(n) + "○".repeat(5-n); }
 function bar(lv){ return "●".repeat(lv) + "○".repeat(3-lv); }
@@ -338,6 +453,7 @@ function unlocked(){ return METHODS.reduce((a,m)=>a+P[m.id].lv,0); }
    ============================================================ */
 const cv = document.getElementById("cv"), g = cv.getContext("2d");
 const W = 720, C = W/2;
+const SH={dia:0,nose:8,coh:4,sigh:3,box:4,temp:6,co2:3};
 
 const E = { list:[ ], si:0, m:null, tl:[ ], idx:0, t:0, cyc:1, mode:"idle",
 
@@ -390,7 +506,9 @@ function paint(){
   const p = E.tl[E.idx]; if(!p) return;
   draw();
   document.getElementById("phTx").textContent = PHASE_TX[p.k] || "—";
-  document.getElementById("ctTx").textContent = Math.max(1, Math.ceil(p.sec - E.t));
+  var _rem = Math.max(0, p.sec - E.t);
+  var _isInt = Math.abs(p.sec - Math.round(p.sec)) < 0.01;
+  document.getElementById("ctTx").textContent = _isInt ? Math.max(1, Math.ceil(_rem)) : _rem.toFixed(1);
   var _mo=window.__mode||"cyc", _cy=cycOf(E.m,E.curLv);
   document.getElementById("hdTx").textContent = (_mo==="time") ? "按时间" : (_mo==="free") ? "自由" : ("循环 " + Math.min(E.cyc,_cy) + "/" + _cy);
 }
@@ -439,6 +557,7 @@ function finish(){
   document.getElementById("d").classList.add("on");
   // 档位推进
   const st = E.list[0], m = METHODS.find(x=>x.id===st.id), p = P[m.id];
+  const _p0={tot:TOT,lv:p.lv,streak:p.streak};
   p.done++; p.streak++; MIN += E.elapsed/60; TOT++; heat[27] = 1;
   let up = null;
   if(p.lv < 3 && p.streak >= NEED[p.lv-1]){ p.lv++; p.streak = 0; UPG++; up = m.name + " 升到 L" + p.lv; }
@@ -449,9 +568,13 @@ function finish(){
   document.getElementById("dStep").textContent = E.list.length;
   document.getElementById("dUp").innerHTML = up
     ? '<div class="up">⬆ ' + up + ' · ' + m.rec[p.lv-1] + '</div>'
-    : '<div class="up">' + m.name + ' · ' + bar(p.lv) + ' · 再练 ' + (NEED[p.lv-1]-p.streak) + ' 次升级</div>';
+    : (p.lv<3 ? '<div class="up">' + m.name + ' · ' + bar(p.lv) + ' · 再练 ' + (NEED[p.lv-1]-p.streak) + ' 次升级</div>'
+      : '<div class="up">' + m.name + ' · ' + bar(p.lv) + ' · 已满级</div>');
   saveProgress();
+  var _newb=refreshBadges();
   renderAll();
+  badgePopup(_newb.fresh);
+  rewardAnim(m, p, up?true:false, _p0);
 }
 
 /* ============================================================
@@ -517,6 +640,25 @@ function renderMine(){
   $("kUp").textContent = UPG;
   $("hStat").textContent = "完成 " + heat.filter(x=>x).length + " 天";
   $("mineHeat").innerHTML = heat.map(v=>'<i class="'+(v?"f":"")+'"></i>').join("");
+  var _got=collectedBadges(), _eb=[], _bi, _b;
+  for(_bi=0;_bi<_got.length;_bi++){
+    _b=BADGES.filter(function(x){return x.id===_got[_bi];})[0];
+    if(_b){ _eb.push(_b); }
+  }
+  var _bc=$("bCnt");
+  if(_bc){ _bc.textContent=_eb.length+"/"+BADGES.length; }
+  var _bx=$("badgeBox");
+  if(_bx){
+    if(_eb.length>0){
+      _bx.innerHTML=_eb.map(function(b){
+        return '<div class="bdg">'+badgeIcon(b)
+          +'<span><b>'+b.name+'</b><em>'+b.desc+'</em></span></div>';
+      }).join("");
+    } else {
+      _bx.innerHTML='<div class="sub" style="grid-column:1/-1;'
+        +'padding:4px 2px">完成一次训练，点亮第一枚徽章</div>';
+    }
+  }
 }
 
 function renderHome(){
@@ -553,6 +695,207 @@ function renderHome(){
 /* ============================================================
    §5 交互
    ============================================================ */
+/* reward choreography */
+var _bdgT=null, _rwT=null, _celT=null;
+function toastMsg(s){
+  try{
+    if(window.AndroidBridge){
+      if(window.AndroidBridge.toast){
+        AndroidBridge.toast(s); return;
+      }
+    }
+  }catch(e){}
+  alert(s);
+}
+function badgePopup(fresh){
+  var sheet=$("bdgSheet");
+  if(sheet===null){ return; }
+  if(sheet===undefined){ return; }
+  if(_bdgT){ clearTimeout(_bdgT); _bdgT=null; }
+  if(fresh===null){ sheet.classList.remove("on"); return; }
+  if(fresh===undefined){ sheet.classList.remove("on"); return; }
+  if(fresh.length===0){ sheet.classList.remove("on"); return; }
+  var bd=BADGES.filter(function(b){
+    return fresh.indexOf(b.id)>=0;
+  });
+  $("bdgNewBox").innerHTML=bd.map(function(b){
+    return '<div class="bdg">'+badgeIcon(b)
+      +'<span><b>'+b.name+'</b><em>'+b.desc+'</em></span></div>';
+  }).join("");
+  $("bdgSub").textContent="已收进「我的」· 共 {n} 枚".replace("{n}",bd.length);
+  _bdgT=setTimeout(function(){ sheet.classList.add("on"); },650);
+}
+function vibrateCelebrate(){
+  var pat=[26,70,26];
+  try{
+    if(window.AndroidBridge){
+      if(typeof AndroidBridge.vibrate==="function"){
+        try{ AndroidBridge.vibrate(pat); }
+        catch(e){
+          try{ AndroidBridge.vibrate(26); }catch(e2){}
+        }
+      }
+    } else {
+      if(navigator.vibrate){ navigator.vibrate(pat); }
+    }
+  }catch(e){}
+}
+function celebrate(m){
+  vibrateCelebrate();
+  var cvs=$("dCv");
+  if(cvs===null){ return; }
+  var c=cvs.getContext("2d");
+  if(c===null){ return; }
+  if(c===undefined){ return; }
+  var SZ=256, R=92, cx=SZ/2, cy=SZ/2, n=SH[m.id];
+  if(n===undefined){ n=0; }
+  var t0=performance.now(), DUR=1200;
+  if(_celT){ cancelAnimationFrame(_celT); _celT=null; }
+  function frame(now){
+    var t=Math.min(1,(now-t0)/DUR);
+    var glow=t>0.55?(12+10*Math.sin((t-0.55)/0.45*Math.PI*3)):0;
+    c.clearRect(0,0,SZ,SZ);
+    c.lineCap="round"; c.lineJoin="round";
+    var v=[], i, ang;
+    if(n>=2){
+      for(i=0;i<n;i++){
+        ang=-1.5708+i*2*Math.PI/n;
+        v.push([cx+R*Math.cos(ang),cy+R*Math.sin(ang)]);
+      }
+      c.beginPath(); c.moveTo(v[0][0],v[0][1]);
+      for(i=1;i<n;i++){ c.lineTo(v[i][0],v[i][1]); }
+      c.closePath(); c.lineWidth=6;
+      c.strokeStyle="rgba(255,255,255,.12)"; c.stroke();
+      var edges=Math.min(1,t/0.55)*n, lim=Math.ceil(edges);
+      c.save(); c.shadowColor="rgba(94,224,255,.95)";
+      c.shadowBlur=glow; c.strokeStyle="#8fd0ff"; c.lineWidth=8;
+      for(i=0;i<lim;i++){
+        if(i>=n){ break; }
+        var seg=Math.min(1,edges-i);
+        if(seg<=0){ break; }
+        c.beginPath(); c.moveTo(v[i][0],v[i][1]);
+        c.lineTo(v[i][0]+(v[(i+1)%n][0]-v[i][0])*seg,
+                 v[i][1]+(v[(i+1)%n][1]-v[i][1])*seg);
+        c.stroke();
+      }
+      c.restore();
+    } else {
+      c.beginPath(); c.arc(cx,cy,R,0,6.2832);
+      c.lineWidth=6; c.strokeStyle="rgba(255,255,255,.12)"; c.stroke();
+      var e=Math.min(1,t/0.55);
+      c.beginPath(); c.arc(cx,cy,R,-1.5708,-1.5708+6.2832*e);
+      c.save(); c.shadowColor="rgba(94,224,255,.9)"; c.shadowBlur=glow;
+      c.lineWidth=8; c.strokeStyle="#8fd0ff"; c.stroke(); c.restore();
+    }
+    if(t<1){ _celT=requestAnimationFrame(frame); } else { _celT=null; }
+  }
+  _celT=requestAnimationFrame(frame);
+}
+function rewardAnim(m,p,up,p0){
+  if(_rwT){ cancelAnimationFrame(_rwT); _rwT=null; }
+  var cvs=$("dCv");
+  if(cvs){
+    cvs.classList.toggle("on",up?true:false);
+    if(up===false){
+      var cc=cvs.getContext("2d");
+      if(cc){ cc.clearRect(0,0,256,256); }
+    }
+  }
+  var needFrom=NEED[p0.lv-1], needTo=NEED[p.lv-1];
+  if(needFrom===undefined){ needFrom=1; }
+  if(needTo===undefined){ needTo=0; }
+  var fillFrom, fillTo, DUR=520, t0=performance.now();
+  if(up){
+    fillFrom=(needFrom-1)/needFrom; fillTo=1;
+  } else {
+    if(needTo>0){ fillFrom=p0.streak/needFrom; fillTo=p.streak/needTo; }
+    else { fillFrom=1; fillTo=1; }
+  }
+  $("dPb").style.width="0%";
+  function frame(now){
+    var t=Math.min(1,(now-t0)/DUR);
+    var e=1-Math.pow(1-t,3);
+    var tot=Math.round(p0.tot+(TOT-p0.tot)*e);
+    $("dTot").textContent="累计 {n} 次".replace("{n}",tot);
+    var fill=Math.max(0,Math.min(1,fillFrom+(fillTo-fillFrom)*e));
+    $("dPb").style.width=(fill*100).toFixed(1)+"%";
+    if(up){
+      var a=Math.min(needFrom,Math.round(needFrom-1+e));
+      $("dLv").textContent="L"+p0.lv+" · "+a+"/"+needFrom;
+    } else {
+      var a2=Math.round(p0.streak+(p.streak-p0.streak)*e);
+      if(needTo>0){ $("dLv").textContent="L"+p.lv+" · "+a2+"/"+needTo; } else { $("dLv").textContent="L"+p.lv; }
+    }
+    if(t<1){ _rwT=requestAnimationFrame(frame); }
+    else{
+      _rwT=null;
+      if(up){
+        if(needTo>0){ $("dLv").textContent="L"+p.lv+" · 0/"+needTo; } else { $("dLv").textContent="L"+p.lv; }
+        $("dPb").style.width="0%";
+        celebrate(m);
+      } else {
+        if(needTo>0){ $("dLv").textContent="L"+p.lv+" · "+p.streak+"/"+needTo; } else { $("dLv").textContent="L"+p.lv; }
+      }
+    }
+  }
+  _rwT=requestAnimationFrame(frame);
+}
+function drawShareShape(c,id,cx,cy,R){
+  var n=SH[id], i, ang, v=[];
+  if(n===undefined){ n=0; }
+  c.beginPath();
+  if(n<2){ c.arc(cx,cy,R,0,6.2832); c.stroke(); return; }
+  for(i=0;i<n;i++){
+    ang=-1.5708+i*2*Math.PI/n;
+    v.push([cx+R*Math.cos(ang),cy+R*Math.sin(ang)]);
+  }
+  c.moveTo(v[0][0],v[0][1]);
+  for(i=1;i<n;i++){ c.lineTo(v[i][0],v[i][1]); }
+  c.closePath(); c.stroke();
+}
+function makeShareCard(){
+  var st={id:"dia"};
+  if(E.list){
+    if(E.list.length>0){ st=E.list[0]; }
+  }
+  var m=METHODS.find(function(x){return x.id===st.id;});
+  if(m===undefined){ m=METHODS[0]; }
+  var cvs=document.createElement("canvas");
+  cvs.width=1080; cvs.height=1440;
+  var c=cvs.getContext("2d");
+  if(c===null){ return null; }
+  if(c===undefined){ return null; }
+  c.fillStyle="#080C14"; c.fillRect(0,0,1080,1440);
+  var gr=c.createLinearGradient(220,240,860,1040);
+  gr.addColorStop(0,"#5ee0ff"); gr.addColorStop(1,"#b18cff");
+  c.strokeStyle=gr; c.lineWidth=16;
+  c.lineCap="round"; c.lineJoin="round";
+  drawShareShape(c,m.id,540,430,262);
+  var mins=(E.elapsed/60).toFixed(1), numW, unitW, startX;
+  c.textAlign="center"; c.textBaseline="alphabetic";
+  c.fillStyle="#e8eef8";
+  c.font="250 190px -apple-system,'PingFang SC',sans-serif";
+  numW=c.measureText(mins).width;
+  c.font="400 52px -apple-system,'PingFang SC',sans-serif";
+  unitW=c.measureText("分钟").width;
+  startX=540-(numW+20+unitW)/2;
+  c.textAlign="left";
+  c.font="250 190px -apple-system,'PingFang SC',sans-serif";
+  c.fillText(mins,startX,1005);
+  c.fillStyle="#93a4bd";
+  c.font="400 52px -apple-system,'PingFang SC',sans-serif";
+  c.fillText("分钟",startX+numW+20,975);
+  c.textAlign="center"; c.fillStyle="#93a4bd";
+  c.font="400 34px -apple-system,'PingFang SC',sans-serif";
+  c.fillText("{name} · {cyc} 循环".replace("{name}",m.name)
+    .replace("{cyc}",String(E.switches)),540,1135);
+  c.textAlign="right"; c.fillStyle="rgba(147,164,189,.7)";
+  c.font="400 30px -apple-system,'PingFang SC',sans-serif";
+  c.fillText("呼吸",975,1330);
+  return cvs.toDataURL("image/png");
+}
+
+
 document.querySelectorAll("#tabbar button").forEach(b=>{
   b.onclick = ()=>{
     document.querySelectorAll("#tabbar button").forEach(x=>x.classList.remove("on"));
@@ -570,7 +913,15 @@ $("gMain").onclick = ()=>{
 };
 $("shOK").onclick = ()=>{ $("sheet").classList.remove("on"); loadStep(); };
 $("shNo").onclick = ()=>{ $("sheet").classList.remove("on"); $("g").classList.remove("on"); bridgeKeepOn(false); };
-$("dShare").onclick = ()=>{ var _s="分享卡片：本次 " + (E.elapsed/60).toFixed(1) + " 分钟"; if(window.AndroidBridge&&window.AndroidBridge.toast){ try{ AndroidBridge.toast(_s); }catch(e){ alert(_s); } } else alert(_s); };
+$("dShare").onclick = function(){
+  var url=null;
+  try{ url=makeShareCard(); }catch(e){ url=null; }
+  if(url===null){ toastMsg("分享卡片生成失败"); return; }
+  $("svImg").src=url;
+  $("sv").classList.add("on");
+};
+$("svClose").onclick = function(){ $("sv").classList.remove("on"); };
+$("bdgOK").onclick = function(){ $("bdgSheet").classList.remove("on"); };
 $("dHome").onclick = ()=>{ $("d").classList.remove("on"); };
 document.querySelectorAll("#segSpd button").forEach(b=>{
   b.onclick = ()=>{
@@ -610,7 +961,6 @@ requestAnimationFrame(loop);
 function draw(){
   var m=E.m; if(!m) return;
   g.clearRect(0,0,W,W); g.lineCap="round";
-  var SH={dia:0,nose:0,coh:4,sigh:3,box:4,temp:6,co2:3};
   var S=SH[m.id]; if(S===undefined) S=0;
   var n=E.tl.length, R=250, cur=E.tl[E.idx], i, t;
   var pp=cur?Math.min(1,E.t/cur.sec):0;
