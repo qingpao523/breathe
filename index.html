@@ -261,32 +261,91 @@ var S={get:function(k,d){try{var v=localStorage.getItem("breathe:"+k);return v==
 /* ===== settings (persisted) ===== */
 const SETTINGS=Object.assign({sound:true,vibrate:true,keepOn:true,remindRide:false,remindSleep:false,speed:1,mode:"cyc",val:6},S.get("settings",{}));
 
-/* ===== WebAudio phase cues ===== */
-var AC=null;
+/* ===== WebAudio phase cues: gesture unlock + fallback ===== */
+var AC=null, GAIN=0.12, FB={}, FB_N=0, CUE_N=0, UNLOCK_N=0;
 var CUE_HZ={inhale:520,inhale2:520,hold:660,exhale:330,hold2:440};
-function initAudio(){
-  if(AC){ if(AC.state==="suspended"){try{AC.resume();}catch(e){}} return; }
+var AUDIO_DEBUG=(function(){try{return localStorage.getItem("breathe:audiodebug")==="1";}catch(e){return false;}})();
+function audioLog(msg){ if(AUDIO_DEBUG){ try{ console.log("[breathe-audio] "+msg); }catch(e){} } }
+function beepUri(f){
   try{
-    var Ctx=window.AudioContext||window.webkitAudioContext;
-    if(!Ctx) return;
-    AC=new Ctx();
-    if(AC.state==="suspended"){try{AC.resume();}catch(e){}}
-  }catch(e){AC=null;}
+    var sr=22050, n=Math.floor(sr*0.14), d=new Uint8Array(44+n*2), i;
+    function st(o,s){ for(i=0;i<s.length;i++) d[o+i]=s.charCodeAt(i); }
+    function u32(o,v){ d[o]=v&255; d[o+1]=(v>>8)&255; d[o+2]=(v>>16)&255; d[o+3]=(v>>24)&255; }
+    function u16(o,v){ d[o]=v&255; d[o+1]=(v>>8)&255; }
+    st(0,"RIFF"); u32(4,36+n*2); st(8,"WAVEfmt "); u32(16,16); u16(20,1); u16(22,1);
+    u32(24,sr); u32(28,sr*2); u16(32,2); u16(34,16); st(36,"data"); u32(40,n*2);
+    for(i=0;i<n;i++){
+      var t=i/sr, env=Math.min(1,t/0.012)*Math.exp(-t*16);
+      var v=Math.round(Math.sin(2*Math.PI*f*t)*env*0.7*32767);
+      if(v>32767) v=32767;
+      if(v<-32768) v=-32768;
+      d[44+i*2]=v&255; d[44+i*2+1]=(v>>8)&255;
+    }
+    var b=""; for(i=0;i<d.length;i++) b+=String.fromCharCode(d[i]);
+    return "data:audio/wav;base64,"+btoa(b);
+  }catch(e){ return ""; }
 }
-function cue(kind){
-  if(!SETTINGS.sound||!AC) return;
+function buildFallback(){
   try{
-    var f=CUE_HZ[kind]||440,t0=AC.currentTime;
-    var o=AC.createOscillator(),gn=AC.createGain();
-    o.type="sine"; o.frequency.setValueAtTime(f,t0);
-    gn.gain.setValueAtTime(0.0001,t0);
-    gn.gain.exponentialRampToValueAtTime(0.05,t0+0.012);
-    gn.gain.exponentialRampToValueAtTime(0.0001,t0+0.12);
-    o.connect(gn); gn.connect(AC.destination);
-    o.start(t0); o.stop(t0+0.13);
+    Object.keys(CUE_HZ).forEach(function(k){
+      if(FB[k]) return;
+      var uri=beepUri(CUE_HZ[k]);
+      if(uri){ var a=new Audio(uri); a.preload="auto"; FB[k]=a; }
+    });
   }catch(e){}
 }
-
+function playFallback(kind){
+  buildFallback();
+  var a=FB[kind]||FB.inhale;
+  if(a===undefined) return false;
+  try{
+    a.currentTime=0;
+    var p=a.play();
+    if(p&&p.catch) p.catch(function(){});
+    FB_N++; audioLog("fallback "+kind); return true;
+  }catch(e){ return false; }
+}
+function initAudio(){
+  UNLOCK_N++;
+  try{
+    if(AC===null){ var Ctx=window.AudioContext||window.webkitAudioContext; if(Ctx) AC=new Ctx(); }
+    if(AC){
+      if(AC.state==="running"){ } else { var p=AC.resume(); if(p&&p.catch) p.catch(function(){}); }
+      var buf=AC.createBuffer(1,1,22050), src=AC.createBufferSource();
+      src.buffer=buf; src.connect(AC.destination); src.start(0);
+    }
+    buildFallback();
+  }catch(e){ audioLog("init fail "+e); }
+  audioLog("unlock state="+(AC?AC.state:"none"));
+  return AC?AC.state:"none";
+}
+function tone(kind){
+  var f=CUE_HZ[kind]||440, t0=AC.currentTime;
+  var o=AC.createOscillator(), gn=AC.createGain();
+  o.type="sine"; o.frequency.setValueAtTime(f,t0);
+  gn.gain.setValueAtTime(0.0001,t0);
+  gn.gain.exponentialRampToValueAtTime(GAIN,t0+0.012);
+  gn.gain.exponentialRampToValueAtTime(0.0001,t0+0.14);
+  o.connect(gn); gn.connect(AC.destination);
+  o.start(t0); o.stop(t0+0.15);
+}
+function cue(kind){
+  if(SETTINGS.sound===false) return;
+  CUE_N++;
+  if(AC&&AC.state==="running"){
+    try{ tone(kind); return; }catch(e){ audioLog("tone fail "+e); }
+  }
+  if(AC){
+    if(AC.state==="running"){ } else { try{ var p=AC.resume(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
+  }
+  playFallback(kind);
+  audioLog("cue "+kind+" state="+(AC?AC.state:"none")+" fb="+FB_N);
+}
+function audioDiag(){
+  return { state:(AC?AC.state:"none"), gain:GAIN, unlockCalls:UNLOCK_N, cues:CUE_N, fallback:FB_N };
+}
+window.audioDiag=audioDiag;
+window.enableAudioDebug=function(){ try{ localStorage.setItem("breathe:audiodebug","1"); }catch(e){} AUDIO_DEBUG=true; return true; };
 function saveSettings(){S.set("settings",SETTINGS);}
 function bridgeKeepOn(on){try{if(window.AndroidBridge&&window.AndroidBridge.keepScreenOn)window.AndroidBridge.keepScreenOn(on?true:false);}catch(e){}}
 function applySetting(k){ if(k==="sound"){ if(SETTINGS.sound) initAudio(); } else if(k==="keepOn"){ bridgeKeepOn(SETTINGS.keepOn?true:false); } }
@@ -636,7 +695,7 @@ function renderMethods(){
   });
   $("methodList").innerHTML = h;
   document.querySelectorAll("[data-m]").forEach(el=>{
-    el.onclick = ()=> startPlaylist([{id:el.dataset.m}]);
+    el.onclick = ()=>{ initAudio(); startPlaylist([{id:el.dataset.m}]); };
   });
 
   const chips = ["全部","运动","睡前","专注","恢复"];
@@ -658,7 +717,7 @@ function renderSpec(){
   document.querySelectorAll("[data-s]").forEach(el=>{
     const [sid,i] = el.dataset.s.split("-");
     const c = SPECIALTIES.find(x=>x.id===sid).courses[+i];
-    el.onclick = ()=> startPlaylist(c.steps);
+    el.onclick = ()=>{ initAudio(); startPlaylist(c.steps); };
   });
 }
 
@@ -700,13 +759,13 @@ function renderHome(){
   if(near && NEED[near.p.lv-1]-near.p.streak <= 1){
     $("homeCard").innerHTML = '<div class="nm"><b>再练 1 次升级</b><span class="tag go">'+near.m.name+' › L'+(near.p.lv+1)+'</span></div>'
       + '<div class="trains">'+near.m.trains+'</div><div class="rec"><span>当前 L'+near.p.lv+' · '+near.m.rec[near.p.lv-1]+'</span><span class="tag e">'+near.m.ev+'</span></div>';
-    $("homeCard").onclick = ()=> startPlaylist([{id:near.m.id}]);
+    $("homeCard").onclick = ()=>{ initAudio(); startPlaylist([{id:near.m.id}]); };
   } else {
     const c = SPECIALTIES[0].courses[1];
     $("homeCard").innerHTML = '<div class="nm"><b>骑行节奏呼吸</b><span class="tag go">专项 · 骑行专区</span></div>'
       + '<div class="trains">'+c.when+' · 吸 3 圈踏频 / 呼 2 圈踏频</div>'
       + '<div class="rec"><span>L2 · 90 rpm</span><span class="tag e">耦合率 26.3% → 69.9%</span></div>';
-    $("homeCard").onclick = ()=> startPlaylist(c.steps);
+    $("homeCard").onclick = ()=>{ initAudio(); startPlaylist(c.steps); };
   }
   $("segName").textContent = "呼吸段位 L" + (Math.floor(MIN/30)+1);
   $("segCnt").textContent = UPG + " 次升级";
@@ -719,7 +778,7 @@ function renderHome(){
       + '<div class="trains">'+m.trains+'</div><div class="rec"><span><span class="bar">'+bar(p.lv)+'</span> L'+p.lv+' · '+m.rec[p.lv-1]+'</span><span class="tag e">'+m.ev+'</span></div></div>';
   }).join("");
   document.querySelectorAll("[data-q]").forEach(el=>{
-    el.onclick = ()=> startPlaylist([{id:el.dataset.q}]);
+    el.onclick = ()=>{ initAudio(); startPlaylist([{id:el.dataset.q}]); };
   });
 }
 
@@ -942,7 +1001,7 @@ $("gMain").onclick = ()=>{
   if(E.mode==="run"){ E.mode="paused"; $("gMain").textContent="继续"; }
   else if(E.mode==="paused"){ E.mode="run"; last=0; $("gMain").textContent="暂停"; }
 };
-$("shOK").onclick = ()=>{ $("sheet").classList.remove("on"); loadStep(); };
+$("shOK").onclick = ()=>{ initAudio(); $("sheet").classList.remove("on"); loadStep(); };
 $("shNo").onclick = ()=>{ $("sheet").classList.remove("on"); $("g").classList.remove("on"); bridgeKeepOn(false); };
 $("dShare").onclick = function(){
   var url=null;
