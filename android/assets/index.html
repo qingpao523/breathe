@@ -156,8 +156,8 @@ canvas{width:100%;height:100%;display:block}
       <div class="bdgs" id="badgeBox"></div>
     </div>
     <div class="card" id="setCard">
-      <div class="li tap" data-set="remindRide"><span>骑行日提醒</span><span class="rt"><em>出发前 30 分钟</em><span class="tag">需原生支持</span><span class="sw" id="swRemindRide"></span></span></div>
-      <div class="li tap" data-set="remindSleep"><span>睡前提醒</span><span class="rt"><em>22:30</em><span class="tag">需原生支持</span><span class="sw" id="swRemindSleep"></span></span></div>
+      <div class="li tap" data-set="remindRide"><span>骑行日提醒</span><span class="rt"><em>出发前 30 分钟</em><span class="tag" id="tagRemindRide"></span><span class="sw" id="swRemindRide"></span></span></div>
+      <div class="li tap" data-set="remindSleep"><span>睡前提醒</span><span class="rt"><em>22:30</em><span class="tag" id="tagRemindSleep"></span><span class="sw" id="swRemindSleep"></span></span></div>
       <div class="li tap" data-set="sound"><span>声音引导</span><span class="rt"><em id="tSound">开</em><span class="sw" id="swSound"></span></span></div>
       <div class="li tap" data-set="vibrate"><span>相位震动</span><span class="rt"><em id="tVibrate">开</em><span class="sw" id="swVibrate"></span></span></div>
       <div class="li tap" data-set="keepOn"><span>屏幕常亮</span><span class="rt"><em id="tKeepOn">开</em><span class="sw" id="swKeepOn"></span></span></div>
@@ -260,6 +260,7 @@ var S={get:function(k,d){try{var v=localStorage.getItem("breathe:"+k);return v==
        set:function(k,v){try{localStorage.setItem("breathe:"+k,JSON.stringify(v))}catch(e){}}};
 /* ===== settings (persisted) ===== */
 const SETTINGS=Object.assign({sound:true,vibrate:true,keepOn:true,remindRide:false,remindSleep:false,speed:1,mode:"cyc",val:6},S.get("settings",{}));
+const REMIND_TIMES={ride:{h:7,m:0},sleep:{h:22,m:30}};
 
 /* ===== WebAudio phase cues: gesture unlock + fallback ===== */
 var AC=null, GAIN=0.12, FB={}, FB_N=0, CUE_N=0, UNLOCK_N=0;
@@ -348,7 +349,34 @@ window.audioDiag=audioDiag;
 window.enableAudioDebug=function(){ try{ localStorage.setItem("breathe:audiodebug","1"); }catch(e){} AUDIO_DEBUG=true; return true; };
 function saveSettings(){S.set("settings",SETTINGS);}
 function bridgeKeepOn(on){try{if(window.AndroidBridge&&window.AndroidBridge.keepScreenOn)window.AndroidBridge.keepScreenOn(on?true:false);}catch(e){}}
-function applySetting(k){ if(k==="sound"){ if(SETTINGS.sound) initAudio(); } else if(k==="keepOn"){ bridgeKeepOn(SETTINGS.keepOn?true:false); } }
+function applySetting(k){
+  if(k==="sound"){ if(SETTINGS.sound) initAudio(); return; }
+  if(k==="keepOn"){ bridgeKeepOn(SETTINGS.keepOn?true:false); return; }
+  if(k==="remindRide"||k==="remindSleep"){ applyReminder(k); }
+}
+function reminderBridge(){
+  try{ if(window.AndroidBridge&&typeof AndroidBridge.setReminder==="function") return AndroidBridge; }catch(e){}
+  return null;
+}
+function applyReminder(key){
+  var kind=(key==="remindSleep")?"sleep":"ride";
+  var t=REMIND_TIMES[kind];
+  var b=reminderBridge();
+  if(b===null) return;
+  try{
+    if(SETTINGS[key]) b.setReminder(kind,t.h,t.m,true);
+    else if(typeof b.cancelReminder==="function") b.cancelReminder(kind);
+  }catch(e){}
+}
+window.onReminderPermissionResult=function(kind,granted){
+  if(granted) return;
+  var key=(kind==="sleep")?"remindSleep":"remindRide";
+  SETTINGS[key]=false; saveSettings();
+  if(window.syncSettingsUI) syncSettingsUI();
+  toastMsg("需要通知权限，提醒已关闭");
+  var b=reminderBridge();
+  if(b===null){ } else { try{ if(typeof b.cancelReminder==="function") b.cancelReminder(kind); }catch(e){} }
+};
 function setSetting(k,v){SETTINGS[k]=v;saveSettings();applySetting(k);if(window.syncSettingsUI)window.syncSettingsUI();}
 window.setSetting=setSetting;window.__settings=SETTINGS;
 
@@ -356,17 +384,17 @@ window.setSetting=setSetting;window.__settings=SETTINGS;
 const METHODS = [
   { id:"dia", name:"腹式呼吸", group:"睡眠", level:1, ev:"★★", shape:"wave", scene:["运动","睡前","放松"],
     trains:"膈肌主导与呼吸深度 —— 把浅快的胸式改回呼吸的默认档",
-    phases:[{k:"inhale",s:4},{k:"exhale",s:6}], cyc:[10,10,10], dur:[180,300,480],
+    phases:[{k:"inhale",s:4},{k:"exhale",s:6}], cyc:[10,10,10],
     rec:["3 分钟","5 分钟","8 分钟"] },
 
   { id:"sigh", name:"生理性叹息", group:"减压", level:1, ev:"★★", shape:"ring", scene:["专注","运动"],
     trains:"急性交感回落 —— 一分钟内把心率与紧张压下来",
-    phases:[{k:"inhale",s:2},{k:"inhale2",s:1},{k:"exhale",s:6}], cyc:[3,5,10], rep:true,
+    phases:[{k:"inhale",s:2},{k:"inhale2",s:1},{k:"exhale",s:6}], cyc:[3,5,10],
     rec:["3 次","5 次","10 次"] },
 
   { id:"coh", name:"共振慢呼吸 5.5", group:"睡眠", level:2, ev:"★★★", shape:"wave", scene:["恢复","睡前","运动"],
     trains:"迷走激活与 HRV —— 证据最强的恢复手段",
-    phases:[{k:"inhale",s:5.5},{k:"exhale",s:5.5}], cyc:[10,10,10], dur:[300,600,900],
+    phases:[{k:"inhale",s:5.5},{k:"exhale",s:5.5}], cyc:[10,10,10],
     rec:["5 分钟","10 分钟","15 分钟"] },
 
   { id:"478", name:"4-7-8 助眠仪式", group:"睡眠", level:2, ev:"★ 仪式型", shape:"ring", scene:["睡眠","放松"],
@@ -376,7 +404,7 @@ const METHODS = [
 
   { id:"nose", name:"鼻腔呼吸训练", group:"运动", level:2, ev:"★★", shape:"wave", scene:["运动"],
     trains:"通气效率 —— 运动中少过度通气，把呼吸交换率压在 1.0 以下",
-    phases:[{k:"inhale",s:4},{k:"exhale",s:4}], cyc:[10,10,10], dur:[300,480,600],
+    phases:[{k:"inhale",s:4},{k:"exhale",s:4}], cyc:[10,10,10],
     rec:["5 分钟","8 分钟","10 分钟"] },
 
   { id:"box", name:"盒式呼吸 4-4-4-4", group:"减压", level:3, ev:"★★ 表现", shape:"square", scene:["专注","运动"],
@@ -1026,10 +1054,20 @@ function syncSettingsUI(){
   Object.keys(map).forEach(function(k){var el=$(map[k]); if(el) el.classList.toggle("on",SETTINGS[k]?true:false);});
   var tx={sound:"tSound",vibrate:"tVibrate",keepOn:"tKeepOn"};
   Object.keys(tx).forEach(function(k){var el=$(tx[k]); if(el) el.textContent=SETTINGS[k]?"开":"关";});
+  remindTagSync();
   var sv=$("segVis");
   if(sv) sv.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",(b.dataset.v==="1")===(SETTINGS.sound?true:false));});
 }
 window.syncSettingsUI=syncSettingsUI;
+function remindTagSync(){
+  var has=reminderBridge();
+  ["remindRide","remindSleep"].forEach(function(k){
+    var el=document.getElementById("tag"+(k==="remindRide"?"RemindRide":"RemindSleep"));
+    if(el===null||el===undefined) return;
+    if(has===null){ el.textContent="需 App 内使用"; }
+    else { el.textContent=SETTINGS[k]?"已开启":"未开启"; }
+  });
+}
 document.querySelectorAll("[data-set]").forEach(function(el){
   el.onclick=function(){var k=el.dataset.set; setSetting(k,SETTINGS[k]?false:true);};
 });

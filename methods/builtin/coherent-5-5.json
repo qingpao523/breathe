@@ -13,7 +13,6 @@
   ],
   "cycles": 10,
   "mode": "timed",
-  "geometry": "wave",
   "meta": {
     "scene": [
       "睡眠",

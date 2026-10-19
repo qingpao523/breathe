@@ -21,7 +21,6 @@
   ],
   "cycles": 6,
   "mode": "timed",
-  "geometry": "square",
   "meta": {
     "scene": [
       "减压",

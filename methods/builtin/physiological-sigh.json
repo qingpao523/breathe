@@ -17,7 +17,6 @@
   ],
   "cycles": 5,
   "mode": "timed",
-  "geometry": "ring",
   "meta": {
     "scene": [
       "减压"
